@@ -155,8 +155,11 @@ Download the `.dmg` from [Releases](https://github.com/BradB808/ARELO-Office-Sui
 and drag Anleo Office to Applications. Universal binary: Intel and Apple
 Silicon.
 
-The app is not code-signed, so macOS will refuse it on first launch.
-Right-click the app → **Open** → **Open**, or:
+Builds are deliberately **unsigned** — signing would stamp a real person's
+legal name and Apple Team ID into every binary, which is the wrong trade for
+this particular app ([why](SECURITY.md#why-the-default-build-is-unsigned)).
+The cost is that macOS refuses it on first launch. Right-click the app →
+**Open** → **Open**, or:
 
 ```bash
 xattr -dr com.apple.quarantine "/Applications/Anleo Office.app"
@@ -188,6 +191,8 @@ npm run dev:electron   # Electron against the dev server (separate terminal)
 npm run typecheck      # tsc --noEmit
 npm run verify:security
 npm run screenshots    # regenerate docs/screenshots from the running app
+npm run dist           # universal DMG, unsigned
+npm run dist:signed    # only if you intend your Developer ID in the binary
 ```
 
 ### Tests

@@ -15,9 +15,10 @@
     "build": "vite build",
     "start": "npm run build && electron .",
     "icons": "node scripts/make-icons.mjs",
-    "dist": "npm run build && npm run verify:security && electron-builder --mac --universal",
+    "dist": "npm run build && npm run verify:security && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --universal",
     "verify:security": "electron scripts/security-check.cjs",
-    "screenshots": "npm run build && electron scripts/screenshots.cjs"
+    "screenshots": "npm run build && electron scripts/screenshots.cjs",
+    "dist:signed": "npm run build && npm run verify:security && electron-builder --mac --universal"
   },
   "devDependencies": {
     "@tiptap/extension-highlight": "^3.28.0",

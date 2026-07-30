@@ -64,9 +64,8 @@ then <http://localhost:5173/security-test.html>.
 
 ## Verifying a build
 
-There is no code signing certificate on this project, so a downloaded `.dmg`
-is only as trustworthy as wherever you got it. If it matters, build it
-yourself:
+Released builds are **unsigned**, so a downloaded `.dmg` is only as trustworthy
+as wherever you got it. If it matters, build it yourself:
 
 ```bash
 git clone https://github.com/BradB808/ARELO-Office-Suite-.git
@@ -77,6 +76,30 @@ npm run dist
 
 The result lands in `release/`. Because `npm run dist` runs the security checks
 first, a build that produced a DMG is a build that passed them.
+
+### Why the default build is unsigned
+
+`electron-builder` will silently pick up any Apple Developer ID certificate it
+finds in the local keychain and sign with it. That embeds the signer's **legal
+name and Apple Team ID** in the binary, where `codesign -dv` will show it to
+anyone who has the file.
+
+For a tool whose users may care about not being identifiable, quietly stamping
+a real name into every build is the wrong default — including for contributors
+who may not realise their certificate is being used. So `npm run dist` sets
+`CSC_IDENTITY_AUTO_DISCOVERY=false` and produces an unsigned build.
+
+If you do want a signed build, ask for it explicitly:
+
+```bash
+npm run dist:signed
+```
+
+Know what that puts in the artifact before you distribute it:
+
+```bash
+codesign -dv "release/mac-universal/Anleo Office.app"
+```
 
 ## Dependencies
 
