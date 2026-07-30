@@ -1,0 +1,743 @@
+/* ============ Anleo Sheets — all classes prefixed sx- ============ */
+
+.sx-root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
+  position: relative;
+}
+
+.sx-gridwrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Formula bar ---------- */
+
+.sx-formulabar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sx-refbox {
+  width: 84px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sx-fx {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.sx-fx-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+/* ---------- Grid ---------- */
+
+.sx-gridroot {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  outline: none;
+  background: var(--surface);
+}
+
+.sx-scroll {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+}
+
+.sx-content {
+  position: relative;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.sx-headrow {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--surface-2);
+}
+
+.sx-corner {
+  position: sticky;
+  left: 0;
+  z-index: 7;
+  width: 46px;
+  flex-shrink: 0;
+  background: var(--surface-2);
+  border-right: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+  cursor: default;
+}
+
+.sx-colhead {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  position: relative;
+  cursor: default;
+  user-select: none;
+}
+.sx-colhead.sel {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.sx-colresize {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 1;
+}
+
+.sx-row {
+  display: flex;
+}
+
+.sx-rowhead {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  width: 46px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border-right: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-3);
+  position: sticky;
+  cursor: default;
+  user-select: none;
+}
+.sx-rowhead.sel {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.sx-rowresize {
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 6px;
+  cursor: row-resize;
+  z-index: 1;
+}
+
+.sx-cell {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 5px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: cell;
+}
+.sx-cell.err {
+  color: var(--danger);
+}
+
+/* ---------- Format painter armed hint ---------- */
+
+.sx-gridroot.sx-paint-armed {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.sx-gridroot.sx-paint-armed .sx-cell,
+.sx-gridroot.sx-paint-armed .sx-rowhead,
+.sx-gridroot.sx-paint-armed .sx-colhead {
+  cursor: crosshair;
+}
+
+/* ---------- Filter header button, dropdown affordance, validation warning ---------- */
+
+.sx-filter-btn {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: none;
+  background: var(--surface-2);
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 1;
+}
+.sx-filter-btn svg {
+  width: 10px;
+  height: 10px;
+}
+.sx-filter-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.sx-filter-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.sx-dd-chevron {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.sx-warn-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-top: 7px solid var(--danger);
+  border-left: 7px solid transparent;
+  pointer-events: none;
+}
+
+.sx-dd-list {
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  box-shadow: var(--shadow-pop);
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sx-dd-item {
+  text-align: left;
+  padding: 5px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sx-dd-item:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.sx-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  border-radius: 5px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.sx-filter-row:hover {
+  background: var(--surface-3);
+}
+.sx-filter-row input[type='checkbox'] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.sx-filter-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sx-overlay-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Establish a stacking context above the sticky header/corner (z-index 6/7)
+     and sticky frozen rows/cols (z-index 2/3/5) — without this, the selection
+     rect, active-cell border, fill preview, and merged-cell content (none of
+     which set their own z-index) fall back to stack level 0 and paint BEHIND
+     those positive-z-index sticky elements, going invisible under frozen
+     panes. Children (editinput/dd-list/fillhandle) keep ordering fine among
+     themselves once this context exists. */
+  z-index: 15;
+}
+
+.sx-selrect {
+  position: absolute;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1.5px solid var(--accent);
+  pointer-events: none;
+}
+
+.sx-activecell {
+  position: absolute;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 1px var(--surface);
+  pointer-events: none;
+}
+
+.sx-fillrect {
+  position: absolute;
+  border: 1.5px dashed var(--accent);
+  pointer-events: none;
+}
+
+.sx-fillhandle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border: 1.5px solid var(--surface);
+  border-radius: 1px;
+  cursor: crosshair;
+  pointer-events: auto;
+  z-index: 8;
+}
+
+.sx-merge-cell {
+  position: absolute;
+  pointer-events: none;
+}
+
+.sx-editinput {
+  position: absolute;
+  z-index: 9;
+  pointer-events: auto;
+  box-sizing: border-box;
+  border: 2px solid var(--accent);
+  outline: none;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12.5px;
+  padding: 0 4px;
+  font-family: inherit;
+  box-shadow: var(--shadow-m);
+}
+
+/* ---------- Bottom bar: sheet tabs + grow affordances + status ---------- */
+
+.sx-bottombar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  height: 34px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.sx-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  flex-shrink: 1;
+  min-width: 0;
+  height: 100%;
+}
+.sx-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-s);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 160px;
+}
+.sx-tab:hover {
+  background: var(--surface-3);
+}
+.sx-tab.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  border-color: transparent;
+}
+.sx-tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sx-tab-input {
+  border: none;
+  outline: none;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  width: 90px;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.sx-tab-x {
+  opacity: 0;
+  display: flex;
+  border-radius: 4px;
+}
+.sx-tab:hover .sx-tab-x {
+  opacity: 0.7;
+}
+.sx-tab-x:hover {
+  opacity: 1 !important;
+  background: var(--surface-3);
+}
+
+.sx-grow-btn {
+  font-size: 11px;
+  color: var(--text-3);
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-s);
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sx-grow-btn:hover {
+  color: var(--text);
+  border-color: var(--text-3);
+  background: var(--surface-2);
+}
+
+.sx-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.sx-status b {
+  color: var(--text);
+  font-weight: 600;
+}
+.sx-zoom {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sx-zoom-val {
+  font-size: 11.5px;
+  color: var(--text-2);
+  width: 36px;
+  text-align: center;
+}
+
+/* ---------- Context menu ---------- */
+
+.sx-ctxmenu {
+  position: fixed;
+  z-index: 3000;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-pop);
+  padding: 5px;
+  min-width: 190px;
+  animation: pop-in 0.12s var(--ease);
+}
+
+/* ---------- Charts ---------- */
+
+.sx-chart-card {
+  position: absolute;
+  pointer-events: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-m);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 4;
+}
+.sx-chart-card.dragging,
+.sx-chart-card.resizing {
+  box-shadow: var(--shadow-l);
+  z-index: 20;
+}
+.sx-chart-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+  flex-shrink: 0;
+}
+.sx-chart-title {
+  font-size: 12px;
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sx-chart-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.13s;
+}
+.sx-chart-card:hover .sx-chart-actions {
+  opacity: 1;
+}
+.sx-chart-body {
+  flex: 1;
+  min-height: 0;
+  padding: 6px;
+}
+.sx-chart-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+}
+.sx-chart-resize::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--text-3);
+  border-bottom: 2px solid var(--text-3);
+  border-radius: 0 0 2px 0;
+  opacity: 0.6;
+}
+
+/* ---------- Toast ---------- */
+
+.sx-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  border-radius: var(--radius-m);
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-weight: 500;
+  box-shadow: var(--shadow-pop);
+  animation: sx-toast-in 0.18s var(--ease);
+  z-index: 2500;
+  pointer-events: none;
+}
+@keyframes sx-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+}
+
+/* ---------- Find & replace ---------- */
+
+.sx-findbar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 30;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-pop);
+  padding: 6px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: pop-in 0.12s var(--ease);
+}
+.sx-findbar-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sx-findbar-toggle {
+  width: 20px;
+  height: 26px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+}
+.sx-findbar-toggle:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.sx-findbar-input {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12.5px;
+  padding: 0 8px;
+  outline: none;
+}
+.sx-findbar-input:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.sx-findbar-count {
+  font-size: 11px;
+  color: var(--text-3);
+  min-width: 34px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sx-chartmodal-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.sx-chartmodal-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.sx-chartmodal-hint {
+  font-size: 11px;
+  color: var(--text-3);
+}
+.sx-series-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ---------- AI formula assistant ---------- */
+
+.sx-ai-privacy {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.sx-ai-textarea {
+  width: 100%;
+  height: auto;
+  min-height: 60px;
+  padding: 8px 10px;
+  resize: vertical;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.sx-ai-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.sx-ai-error {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 8px;
+}
+.sx-ai-formula {
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12.5px;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+.sx-ai-explanation {
+  margin-top: 10px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text);
+}

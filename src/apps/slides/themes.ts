@@ -1,0 +1,111 @@
+import type { SlidesTheme } from '../../shared/types'
+
+// Slide themes. The slides editor and templates both use these.
+// getTheme() must always return a valid theme (falls back to the first).
+
+export const SLIDES_THEMES: SlidesTheme[] = [
+  {
+    id: 'aurora',
+    name: 'Aurora',
+    bg: { type: 'gradient', from: '#0f172a', to: '#1e3a8a', angle: 135 },
+    titleColor: '#ffffff',
+    bodyColor: '#cbd5e1',
+    accent: '#38bdf8',
+    titleFont: 'Avenir Next',
+    bodyFont: 'Helvetica Neue',
+  },
+  {
+    id: 'paper',
+    name: 'Paper',
+    bg: { type: 'solid', color: '#ffffff' },
+    titleColor: '#111827',
+    bodyColor: '#4b5563',
+    accent: '#2563eb',
+    titleFont: 'Georgia',
+    bodyFont: 'Helvetica Neue',
+  },
+  {
+    id: 'ember',
+    name: 'Ember',
+    bg: { type: 'gradient', from: '#7c2d12', to: '#ea580c', angle: 160 },
+    titleColor: '#fff7ed',
+    bodyColor: '#fed7aa',
+    accent: '#fdba74',
+    titleFont: 'Futura',
+    bodyFont: 'Helvetica Neue',
+  },
+  {
+    id: 'meadow',
+    name: 'Meadow',
+    bg: { type: 'solid', color: '#f0fdf4' },
+    titleColor: '#14532d',
+    bodyColor: '#166534',
+    accent: '#059669',
+    titleFont: 'Avenir Next',
+    bodyFont: 'Helvetica Neue',
+  },
+  {
+    id: 'noir',
+    name: 'Noir',
+    bg: { type: 'solid', color: '#0a0a0a' },
+    titleColor: '#fafafa',
+    bodyColor: '#a3a3a3',
+    accent: '#eab308',
+    titleFont: 'Didot',
+    bodyFont: 'Helvetica Neue',
+  },
+  {
+    id: 'blush',
+    name: 'Blush',
+    bg: { type: 'gradient', from: '#fdf2f8', to: '#fce7f3', angle: 120 },
+    titleColor: '#831843',
+    bodyColor: '#9d174d',
+    accent: '#db2777',
+    titleFont: 'Didot',
+    bodyFont: 'Optima',
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean',
+    bg: { type: 'gradient', from: '#ecfeff', to: '#cffafe', angle: 135 },
+    titleColor: '#164e63',
+    bodyColor: '#155e75',
+    accent: '#0891b2',
+    titleFont: 'Gill Sans',
+    bodyFont: 'Helvetica Neue',
+  },
+  {
+    id: 'slate',
+    name: 'Slate',
+    bg: { type: 'solid', color: '#f8fafc' },
+    titleColor: '#0f172a',
+    bodyColor: '#475569',
+    accent: '#4f46e5',
+    titleFont: 'Helvetica Neue',
+    bodyFont: 'Helvetica Neue',
+  },
+  {
+    id: 'grape',
+    name: 'Grape',
+    bg: { type: 'gradient', from: '#2e1065', to: '#6d28d9', angle: 140 },
+    titleColor: '#f5f3ff',
+    bodyColor: '#ddd6fe',
+    accent: '#c4b5fd',
+    titleFont: 'Avenir Next',
+    bodyFont: 'Helvetica Neue',
+  },
+  {
+    id: 'sunrise',
+    name: 'Sunrise',
+    bg: { type: 'gradient', from: '#fef3c7', to: '#fde68a', angle: 120 },
+    titleColor: '#78350f',
+    bodyColor: '#92400e',
+    accent: '#d97706',
+    titleFont: 'Futura',
+    bodyFont: 'Helvetica Neue',
+  },
+]
+
+export function getTheme(id: string): SlidesTheme {
+  return SLIDES_THEMES.find((t) => t.id === id) ?? SLIDES_THEMES[0]
+}

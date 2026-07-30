@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+release/
+.tmp-*/
+
+# Screenshots are committed on purpose (docs/screenshots) — nothing else here is
+
+# Editor / tooling
+.claude/
+.vscode/
+.idea/
+*.swp
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Logs and local scratch
+*.log
+npm-debug.log*
+.env
+.env.*
+*.local
+
+# Never commit a real key or a personal document
+*.pem
+*.p12
+*.mobileprovision
+secrets.json

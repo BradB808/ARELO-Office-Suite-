@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      DEV ONLY. This policy allows the Vite dev server and its HMR socket.
+      `npm run build` replaces it with the strict production policy defined in
+      vite.config.ts (no ws:, no localhost, plus form-action/base-uri/object-src
+      'none'). Never ship this one.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; connect-src 'self' ws://localhost:5173 http://localhost:5173 https://openrouter.ai; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anleo Office</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

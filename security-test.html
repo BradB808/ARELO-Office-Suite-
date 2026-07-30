@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Anleo — sanitizer test</title>
+    <style>
+      body { font: 14px ui-monospace, SFMono-Regular, Menlo, monospace; padding: 24px; }
+      .pass { color: #0a7d32; }
+      .fail { color: #c0261c; }
+      li { margin: 4px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Import sanitizer</h1>
+    <div id="out">running…</div>
+    <script type="module">
+      import { runSanitizeTests } from '/src/shared/sanitizeHtml.test.ts'
+      const r = runSanitizeTests()
+      window.__sanitizeResult = r
+      document.getElementById('out').innerHTML =
+        `<p class="${r.failed ? 'fail' : 'pass'}">${r.passed} passed, ${r.failed} failed</p>` +
+        (r.failures.length
+          ? '<ul>' + r.failures.map((f) => `<li class="fail">${f.name}: ${f.detail}</li>`).join('') + '</ul>'
+          : '')
+    </script>
+  </body>
+</html>
