@@ -155,18 +155,38 @@ Download the `.dmg` from [Releases](https://github.com/BradB808/ARELO-Office-Sui
 and drag Anleo Office to Applications. Universal binary: Intel and Apple
 Silicon.
 
-Builds are deliberately **unsigned** — signing would stamp a real person's
-legal name and Apple Team ID into every binary, which is the wrong trade for
-this particular app ([why](SECURITY.md#why-the-default-build-is-unsigned)).
-The cost is that macOS refuses it on first launch. Right-click the app →
-**Open** → **Open**, or:
+### macOS will block it on first launch — here is how to open it
+
+Builds are deliberately **unsigned**. Signing would stamp a real person's legal
+name and Apple Team ID into every binary, which is the wrong trade for this
+particular app ([why](SECURITY.md#why-the-default-build-is-unsigned)). The cost
+is one extra step the first time you open it.
+
+You will see *"Apple could not verify 'Anleo Office' is free of malware."*
+That message means the app has not been through Apple's paid notarization
+service. It is not a claim that anything was found.
+
+On **macOS 15 Sequoia and later**, right-click → Open no longer works — Apple
+removed that shortcut. Do this instead:
+
+1. Drag **Anleo Office** to Applications and double-click it once. Click
+   **Done** on the warning.
+2. Open  → **System Settings** → **Privacy & Security**.
+3. Scroll to **Security**. You will see *"Anleo Office was blocked to protect
+   your Mac."* Click **Open Anyway** and authenticate.
+4. Double-click the app again and click **Open**. You only do this once.
+
+On **macOS 14 Sonoma and earlier**, right-click the app → **Open** → **Open**.
+
+Either version, if you prefer one command:
 
 ```bash
 xattr -dr com.apple.quarantine "/Applications/Anleo Office.app"
 ```
 
 If you would rather not trust a binary downloaded from the internet — a
-reasonable position for this particular app — build it yourself.
+reasonable position for this particular app — build it yourself instead. It
+takes about five minutes.
 
 ## Build from source
 
