@@ -1,0 +1,40 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#10b981" />
+      <stop offset="1" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="topHighlight" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.32" />
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="14" result="blur" />
+      <feOffset in="blur" dx="0" dy="18" result="offsetBlur" />
+      <feComponentTransfer in="offsetBlur" result="shadow">
+        <feFuncA type="linear" slope="0.30" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode in="shadow" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <clipPath id="card">
+      <rect x="222" y="222" width="580" height="580" rx="64" ry="64" />
+    </clipPath>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1024" height="1024" rx="232" ry="232" fill="url(#bg)" />
+  <rect x="0" y="0" width="1024" height="1024" rx="232" ry="232" fill="url(#topHighlight)" />
+
+  <!-- glyph: rounded grid card with header row + green grid lines -->
+  <g filter="url(#shadow)">
+    <g clip-path="url(#card)">
+      <rect x="222" y="222" width="580" height="580" fill="#ffffff" />
+      <rect x="222" y="222" width="580" height="120" fill="#a7f3d0" />
+      <path d="M415,222 V802 M608,222 V802" stroke="#047857" stroke-width="14" />
+      <path d="M222,342 H802 M222,572 H802" stroke="#047857" stroke-width="14" />
+    </g>
+  </g>
+</svg>

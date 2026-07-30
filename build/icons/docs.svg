@@ -1,0 +1,49 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b82f6" />
+      <stop offset="1" stop-color="#1d4ed8" />
+    </linearGradient>
+    <linearGradient id="topHighlight" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.32" />
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="14" result="blur" />
+      <feOffset in="blur" dx="0" dy="18" result="offsetBlur" />
+      <feComponentTransfer in="offsetBlur" result="shadow">
+        <feFuncA type="linear" slope="0.30" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode in="shadow" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="1024" height="1024" rx="232" ry="232" fill="url(#bg)" />
+  <rect x="0" y="0" width="1024" height="1024" rx="232" ry="232" fill="url(#topHighlight)" />
+
+  <!-- glyph: rounded document sheet with folded corner + text lines -->
+  <!-- page bounds: x 282..742, y 212..812, corner r=28, fold f=110 -->
+  <g filter="url(#shadow)">
+    <path
+      d="M310,212
+         L632,212
+         L742,322
+         L742,784
+         A28,28 0 0 1 714,812
+         L310,812
+         A28,28 0 0 1 282,784
+         L282,240
+         A28,28 0 0 1 310,212
+         Z"
+      fill="#ffffff"
+    />
+    <path d="M632,212 L742,322 L632,322 Z" fill="#bfdbfe" />
+    <path d="M330,503 h364" stroke="#1d4ed8" stroke-width="26" stroke-linecap="round" />
+    <path d="M330,567 h364" stroke="#1d4ed8" stroke-width="26" stroke-linecap="round" />
+    <path d="M330,631 h200" stroke="#1d4ed8" stroke-width="26" stroke-linecap="round" />
+  </g>
+</svg>

@@ -1,0 +1,52 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#252932"/>
+      <stop offset="1" stop-color="#13151a"/>
+    </linearGradient>
+    <linearGradient id="pOrange" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fb923c"/>
+      <stop offset="1" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="pGreen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="pBlue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="topGlow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.09"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="pageShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="14" stdDeviation="26" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+    <clipPath id="squircle">
+      <rect x="0" y="0" width="1024" height="1024" rx="232"/>
+    </clipPath>
+  </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="232" fill="url(#bg)"/>
+
+  <g clip-path="url(#squircle)">
+    <!-- fanned pages: orange (back-left), green (middle), blue (front-right) -->
+    <g filter="url(#pageShadow)" transform="rotate(-24 512 828)">
+      <rect x="342" y="252" width="340" height="480" rx="52" fill="url(#pOrange)"/>
+    </g>
+    <g filter="url(#pageShadow)">
+      <rect x="342" y="228" width="340" height="480" rx="52" fill="url(#pGreen)"/>
+    </g>
+    <g filter="url(#pageShadow)" transform="rotate(24 512 828)">
+      <rect x="342" y="252" width="340" height="480" rx="52" fill="url(#pBlue)"/>
+      <!-- subtle document lines on the front page -->
+      <rect x="402" y="330" width="164" height="26" rx="13" fill="#ffffff" fill-opacity="0.85"/>
+      <rect x="402" y="396" width="220" height="18" rx="9" fill="#ffffff" fill-opacity="0.55"/>
+      <rect x="402" y="446" width="220" height="18" rx="9" fill="#ffffff" fill-opacity="0.55"/>
+      <rect x="402" y="496" width="150" height="18" rx="9" fill="#ffffff" fill-opacity="0.55"/>
+    </g>
+    <!-- top sheen -->
+    <rect x="0" y="0" width="1024" height="430" fill="url(#topGlow)"/>
+  </g>
+</svg>

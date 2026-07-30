@@ -18,7 +18,10 @@ release/
 .DS_Store
 .AppleDouble
 .LSOverride
-Icon?
+# The custom-folder-icon file is literally named "Icon\r". Match it exactly —
+# a bare `Icon?` also swallows build/icons/, because git on macOS matches
+# case-insensitively, which silently dropped the app icon artwork from the repo.
+Icon[\r]
 ._*
 
 # Logs and local scratch
