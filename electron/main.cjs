@@ -52,6 +52,24 @@ function readSecret() {
   return security.decryptSecret(readStore()[SECRET_KEY])
 }
 
+/**
+ * Tighten permissions on an existing store at startup. Writing 0600 only
+ * applies when the file is created, so a store left behind by an older build
+ * stays 0644 — readable by every account on the Mac — until something happens
+ * to save. Waiting for that is not good enough for a file full of documents.
+ */
+function normalizeStorePermissions() {
+  try {
+    if (!fs.existsSync(storePath())) return
+    const mode = fs.statSync(storePath()).mode & 0o777
+    if (mode !== 0o600) fs.chmodSync(storePath(), 0o600)
+    const dir = userDataDir()
+    if ((fs.statSync(dir).mode & 0o777) !== 0o700) fs.chmodSync(dir, 0o700)
+  } catch (err) {
+    console.error('could not tighten store permissions', err)
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1480,
@@ -435,6 +453,7 @@ app.whenReady().then(() => {
   // any window exists, so there is no window in which content loads unguarded.
   security.setDevOrigin(process.env.ELECTRON_START_URL)
   security.installNetworkGate(session.defaultSession)
+  normalizeStorePermissions()
   migratePlaintextSecret()
   security.setAiEnabled(!!readSecret())
 
