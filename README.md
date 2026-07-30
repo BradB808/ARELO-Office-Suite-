@@ -9,6 +9,16 @@ Free, open source, and completely offline — it makes no network requests at al
 ![Platform](https://img.shields.io/badge/macOS-Intel%20%2B%20Apple%20Silicon-black)
 ![Network requests](https://img.shields.io/badge/network%20requests-none-brightgreen)
 
+<br>
+
+<a href="https://github.com/BradB808/ARELO-Office-Suite-/releases/latest/download/Anleo-Office-macOS-universal.dmg">
+  <img src="https://img.shields.io/badge/⬇%20Download%20for%20Mac-1.0.0-2563EB?style=for-the-badge&labelColor=1e40af" alt="Download Anleo Office for macOS" height="42">
+</a>
+
+**One file for Intel and Apple Silicon** · 207 MB · free forever
+<br>
+macOS blocks unsigned apps on first launch — [30-second fix](#macos-will-block-it-on-first-launch--here-is-how-to-open-it)
+
 </div>
 
 ![Anleo Office home screen](docs/screenshots/hub.png)
@@ -151,9 +161,11 @@ model you choose.
 
 ## Install
 
-Download the `.dmg` from [Releases](https://github.com/BradB808/ARELO-Office-Suite-/releases)
-and drag Anleo Office to Applications. Universal binary: Intel and Apple
-Silicon.
+### [⬇ Download Anleo Office for macOS](https://github.com/BradB808/ARELO-Office-Suite-/releases/latest/download/Anleo-Office-macOS-universal.dmg)
+
+Then drag Anleo Office to your Applications folder. One universal binary covers
+both Intel and Apple Silicon — there is nothing to choose between. Older
+versions live on the [Releases page](https://github.com/BradB808/ARELO-Office-Suite-/releases).
 
 ### macOS will block it on first launch — here is how to open it
 
