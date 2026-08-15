@@ -1,7 +1,7 @@
 {
   "name": "anleo-office",
   "productName": "Anleo Office",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A completely free, offline office suite \u2014 documents, spreadsheets, and presentations in one app.",
   "author": "Anleo",
   "license": "MIT",
@@ -18,7 +18,12 @@
     "dist": "npm run build && npm run verify:security && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --universal",
     "verify:security": "electron scripts/security-check.cjs",
     "screenshots": "npm run build && electron scripts/screenshots.cjs",
-    "dist:signed": "npm run build && npm run verify:security && electron-builder --mac --universal"
+    "dist:signed": "npm run build && npm run verify:security && electron-builder --mac --universal",
+    "test:all": "node scripts/run-tests.mjs",
+    "build:e2e": "vite build --ssr src/apps/forms/e2e-roundtrip.ts --outDir .tmp-e2e",
+    "test:forms-e2e": "npm run build:e2e && electron scripts/forms-e2e.cjs",
+    "test:ui": "npm run build && electron scripts/forms-ui-e2e.cjs",
+    "test:contrast": "npm run build && electron scripts/contrast-check.cjs"
   },
   "devDependencies": {
     "@tiptap/extension-highlight": "^3.28.0",
@@ -94,6 +99,11 @@
         {
           "ext": "aslides",
           "name": "Anleo Slides Presentation",
+          "role": "Editor"
+        },
+        {
+          "ext": "aform",
+          "name": "Anleo Forms Form",
           "role": "Editor"
         }
       ]

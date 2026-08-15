@@ -10,6 +10,7 @@ import { sheetsPlanningTemplates } from './sheets-planning'
 import { slidesTemplates } from './slides'
 import { slidesBusinessTemplates } from './slides-business'
 import { slidesCreativeTemplates } from './slides-creative'
+import { formsTemplates } from './forms'
 
 export interface PoolEntry {
   kind: AppKind
@@ -29,6 +30,7 @@ export const templatePool: PoolEntry[] = [
     kind: 'slides' as AppKind,
     tpl: tpl as Template,
   })),
+  ...formsTemplates.map((tpl) => ({ kind: 'forms' as AppKind, tpl: tpl as Template })),
 ]
 
 /** Preferred chip order; anything unexpected sorts to the end alphabetically. */
@@ -75,15 +77,15 @@ export function searchTemplates(
   })
 }
 
-/** Interleave docs/sheets/slides so mixed rows feel varied. */
+/** Interleave the app kinds so mixed rows feel varied. Every kind needs a bucket — a missing one throws. */
 export function interleaveByKind(entries: PoolEntry[]): PoolEntry[] {
-  const by: Record<string, PoolEntry[]> = { docs: [], sheets: [], slides: [] }
+  const kinds: AppKind[] = ['docs', 'sheets', 'slides', 'forms']
+  const by: Record<AppKind, PoolEntry[]> = { docs: [], sheets: [], slides: [], forms: [] }
   entries.forEach((e) => by[e.kind].push(e))
   const out: PoolEntry[] = []
-  for (let i = 0; i < Math.max(by.docs.length, by.sheets.length, by.slides.length); i++) {
-    if (by.docs[i]) out.push(by.docs[i])
-    if (by.sheets[i]) out.push(by.sheets[i])
-    if (by.slides[i]) out.push(by.slides[i])
+  const deepest = Math.max(...kinds.map((k) => by[k].length))
+  for (let i = 0; i < deepest; i++) {
+    for (const k of kinds) if (by[k][i]) out.push(by[k][i])
   }
   return out
 }

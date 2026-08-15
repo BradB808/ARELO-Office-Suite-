@@ -18,6 +18,11 @@ const COPY: Record<AppKind, { what: string; keeps: string }> = {
     what: 'a web page version of this presentation',
     keeps: 'It plays like a slideshow — arrow keys to move, F for fullscreen, S for speaker notes.',
   },
+  forms: {
+    what: 'a fillable version of this form',
+    keeps:
+      'Whoever opens it can answer it offline and send the answers back to you as a file. Nothing is uploaded anywhere.',
+  },
 }
 
 export function ShareWebPageModal({

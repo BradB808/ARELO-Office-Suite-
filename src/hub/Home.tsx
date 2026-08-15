@@ -12,6 +12,7 @@ const KIND_LABEL: Record<AppKind, string> = {
   docs: 'Docs',
   sheets: 'Sheets',
   slides: 'Slides',
+  forms: 'Forms',
 }
 
 const CARD_W = 172

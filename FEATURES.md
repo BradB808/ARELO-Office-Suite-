@@ -1,4 +1,4 @@
-# Office parity audit — Anleo vs Excel / Word / PowerPoint
+# Office parity audit — Anleo vs Excel / Word / PowerPoint / Google Forms
 
 Audit of the mainstream feature surface of Microsoft Office (and Google Workspace),
 triaged for a free, offline, single-user suite. ✅ shipped · 🕐 later · ✖ out of scope.
@@ -67,3 +67,36 @@ triaged for a free, offline, single-user suite. ✅ shipped · 🕐 later · ✖
 | Group/ungroup | 🕐 |
 | Video/audio embeds | 🕐 |
 | Live co-presenting | ✖ (no servers by design) |
+
+## Forms vs Google Forms
+
+Google Forms is a server product: you publish a link and answers land in
+Google's database. Anleo has no server, so the round trip is different — the
+form travels as a file, and so do the answers. Nobody in the middle sees them.
+
+| Feature | Status |
+|---|---|
+| Question types: short, paragraph, choice, checkboxes, dropdown, scale, date, time, email, number | ✅ |
+| Sections, help text, required questions, "Other" option | ✅ |
+| Themes, question numbering, progress bar | ✅ |
+| Live preview of exactly what respondents see | ✅ |
+| **Share as one self-contained .html file** (no link, no account, works offline) | ✅ |
+| **Responses come back as a file or a paste-able code** | ✅ |
+| Response summaries with per-question charts | ✅ |
+| Export responses to CSV | ✅ |
+| **Send responses straight into Anleo Sheets** | ✅ |
+| Printable paper version (PDF) | ✅ |
+| Form templates | ✅ (10) |
+| Response validation (required, email, number range) | ✅ |
+| Automatic collection from a public link | ✖ (needs a server — that is the trade) |
+| Live response notifications | ✖ (no servers by design) |
+| Branching / conditional questions | 🕐 |
+| File upload questions | 🕐 |
+
+### Why the file round trip is a feature, not a workaround
+
+A form that collects sensitive answers — a tip line, a health questionnaire, an
+HR complaint — normally routes every answer through a third party. Anleo's
+never leave the two people involved. The exported page carries a CSP that
+forbids it from contacting anything, so a respondent can verify that for
+themselves before typing a word.

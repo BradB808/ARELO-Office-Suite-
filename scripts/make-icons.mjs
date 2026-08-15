@@ -1,5 +1,5 @@
 // Generates build/icon.icns (from build/icons/suite.svg) plus 512px PNG
-// previews for all four hand-written app icons. Run with `npm run icons`.
+// previews for each hand-written app icon. Run with `npm run icons`.
 //
 // Usage: node scripts/make-icons.mjs
 import { execSync } from 'node:child_process'
@@ -58,8 +58,8 @@ async function main() {
   execSync(`iconutil -c icns "${iconsetDir}" -o "${icnsPath}"`, { stdio: 'inherit' })
   log('icon.icns', icnsPath)
 
-  console.log('Rendering 512px previews for all four app icons...')
-  for (const name of ['suite', 'docs', 'sheets', 'slides']) {
+  console.log('Rendering 512px previews for every app icon...')
+  for (const name of ['suite', 'docs', 'sheets', 'slides', 'forms']) {
     const svgPath = join(iconsDir, `${name}.svg`)
     if (!existsSync(svgPath)) {
       console.warn(`  skipping ${name}: ${svgPath} not found`)

@@ -1,0 +1,377 @@
+/* ============ Anleo Forms — response collection ============ */
+/* Owned by ResponsesPanel.tsx; forms.css owns the builder. */
+
+.fm-resp {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---------- action bar ---------- */
+
+.fm-resp-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.fm-resp-count {
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.fm-resp-count strong {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.fm-resp-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--border);
+}
+.fm-resp-note.ok {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+.fm-resp-note.warn {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+.fm-resp-note.err {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+/* ---------- scroll body ---------- */
+
+.fm-resp-scroll {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  background: var(--canvas);
+  padding: 18px;
+}
+/* Table view hands both axes to the wrapper below. Setting overflow-x on the
+   wrapper alone silently makes overflow-y `auto` too, which turns it into the
+   nearest scrollport — so the sticky header had nothing to stick to while this
+   container did the vertical scrolling. */
+.fm-resp-scroll.table {
+  display: flex;
+  /* flex-start so a two-row table still hugs its rows instead of stretching
+     into a mostly empty card. */
+  align-items: flex-start;
+  overflow: hidden;
+}
+
+.fm-resp-column {
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---------- empty state ---------- */
+
+.fm-resp-empty {
+  max-width: 520px;
+  margin: 40px auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-s);
+  padding: 26px 26px 22px;
+  text-align: left;
+}
+.fm-resp-empty h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 650;
+}
+.fm-resp-empty p {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.fm-resp-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fm-resp-steps li {
+  display: flex;
+  gap: 11px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+.fm-resp-step-n {
+  flex: none;
+  width: 21px;
+  height: 21px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11.5px;
+  font-weight: 650;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fm-resp-empty-cta {
+  margin-top: 18px;
+}
+
+.fm-resp-empty-foot {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+/* ---------- summary cards ---------- */
+
+.fm-resp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+  padding: 15px 17px 16px;
+}
+
+.fm-resp-qhead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.fm-resp-num {
+  flex: none;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.fm-resp-qtitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.fm-resp-qmeta {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.fm-resp-qmeta .fm-resp-avg {
+  color: var(--text-2);
+  font-weight: 550;
+}
+
+.fm-resp-bars {
+  margin-top: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fm-resp-bar-row {
+  display: grid;
+  grid-template-columns: minmax(70px, 30%) 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+.fm-resp-bar-label {
+  font-size: 12.5px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fm-resp-track {
+  height: 20px;
+  border-radius: var(--radius-s);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+/* Only rendered for buckets with votes, so min-width can keep a 1% bar visible
+   without giving every unpicked option a stub that reads as one vote. */
+.fm-resp-fill {
+  height: 100%;
+  border-radius: var(--radius-s);
+  background: var(--accent);
+  min-width: 3px;
+  transition: width 0.2s var(--ease);
+}
+.fm-resp-bar-n {
+  font-size: 12px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fm-resp-bar-n .fm-resp-pct {
+  color: var(--text-3);
+  margin-left: 6px;
+}
+
+.fm-resp-texts {
+  margin: 13px 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 232px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fm-resp-texts li {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: 7px 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.fm-resp-none {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* ---------- table ---------- */
+
+.fm-resp-tablewrap {
+  flex: 1;
+  min-width: 0;
+  max-height: 100%;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+}
+
+.fm-resp-table {
+  border-collapse: collapse;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.fm-resp-table th,
+.fm-resp-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.fm-resp-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+}
+.fm-resp-table tbody tr:hover td {
+  background: var(--surface-2);
+}
+.fm-resp-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.fm-resp-table td {
+  color: var(--text);
+  user-select: text;
+}
+.fm-resp-idx {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.fm-resp-when {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+/* Long free-text answers must not stretch the row into a single wide line. */
+.fm-resp-cell {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fm-resp-blank {
+  color: var(--text-3);
+}
+
+.fm-resp-del {
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  border-radius: var(--radius-s);
+  padding: 3px;
+  cursor: pointer;
+  display: flex;
+  transition: color 0.12s, background 0.12s;
+}
+.fm-resp-del:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+/* ---------- paste modal ---------- */
+
+.fm-resp-paste {
+  width: 100%;
+  height: 150px;
+  resize: vertical;
+  padding: 9px 10px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  outline: none;
+  user-select: text;
+  transition: border-color 0.13s, box-shadow 0.13s;
+}
+.fm-resp-paste:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.fm-resp-modal-err {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--danger);
+}
+
+.fm-resp-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}

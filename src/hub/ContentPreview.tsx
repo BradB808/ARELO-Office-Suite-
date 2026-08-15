@@ -6,6 +6,7 @@ import type {
   AnyContent,
   AppKind,
   DocsContent,
+  FormsContent,
   SheetsContent,
   SlidesContent,
   SlideElement,
@@ -256,6 +257,96 @@ function SlidesPreview({ content, width, height }: { content: SlidesContent; wid
   )
 }
 
+function FormsPreview({ content, width, height }: { content: FormsContent; width: number; height: number }) {
+  // A form card is mostly its header and the first few questions — enough to
+  // tell two templates apart at thumbnail size.
+  const CARD_W = 460
+  const scale = (width - 24) / CARD_W
+  const theme = content.theme
+  const shown = content.questions.slice(0, 5)
+
+  return (
+    <div style={{ width, height, overflow: 'hidden', display: 'flex', justifyContent: 'center', paddingTop: 10 }}>
+      <div
+        style={{
+          width: CARD_W,
+          flexShrink: 0,
+          height: (height - 10) / scale,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top center',
+          pointerEvents: 'none',
+          textAlign: 'left',
+          fontFamily: cssFamily(theme.fontFamily),
+        }}
+      >
+        <div
+          style={{
+            background: `linear-gradient(135deg, ${theme.headerFrom}, ${theme.headerTo})`,
+            color: theme.headerColor,
+            borderRadius: '8px 8px 0 0',
+            padding: '18px 20px',
+          }}
+        >
+          <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2 }}>
+            {content.description ? content.description.slice(0, 60) : 'Form'}
+          </div>
+        </div>
+        <div style={{ background: '#fff', borderRadius: '0 0 8px 8px', padding: '6px 0 12px' }}>
+          {shown.map((q) => (
+            <div
+              key={q.id}
+              style={{
+                background: '#fff',
+                borderTop: '1px solid rgba(15,18,25,0.08)',
+                padding: '12px 20px',
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#1f2328', marginBottom: 7 }}>
+                {q.title.slice(0, 52)}
+                {q.required && <span style={{ color: '#dc2626' }}> *</span>}
+              </div>
+              {q.kind === 'choice' || q.kind === 'checkboxes' || q.kind === 'dropdown' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {(q.options ?? []).slice(0, 3).map((o) => (
+                    <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <span
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: q.kind === 'checkboxes' ? 2 : '50%',
+                          border: '1.5px solid rgba(15,18,25,0.32)',
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span style={{ fontSize: 11.5, color: '#4b5160' }}>{o.label.slice(0, 40)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : q.kind === 'scale' ? (
+                <div style={{ display: 'flex', gap: 12 }}>
+                  {Array.from({ length: Math.min(5, (q.scaleMax ?? 5) - (q.scaleMin ?? 1) + 1) }).map((_, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        border: '1.5px solid rgba(15,18,25,0.32)',
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : q.kind === 'section' ? null : (
+                <div style={{ height: 1, background: 'rgba(15,18,25,0.22)', width: '68%' }} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ContentPreview({
   kind,
   content,
@@ -269,5 +360,6 @@ export function ContentPreview({
 }) {
   if (kind === 'docs') return <DocsPreview content={content as DocsContent} width={width} height={height} />
   if (kind === 'sheets') return <SheetsPreview content={content as SheetsContent} width={width} height={height} />
+  if (kind === 'forms') return <FormsPreview content={content as FormsContent} width={width} height={height} />
   return <SlidesPreview content={content as SlidesContent} width={width} height={height} />
 }

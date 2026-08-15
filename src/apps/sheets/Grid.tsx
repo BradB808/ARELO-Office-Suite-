@@ -90,7 +90,58 @@ function cellStyleCss(style: CellStyle | undefined, numeric: boolean, cond?: Con
   // Conditional-format fill/color OVERRIDES explicit cell style, matching Excel.
   if (cond?.fill) s.background = cond.fill
   if (cond?.color) s.color = cond.color
+
+  // A fill is an absolute colour but the default ink follows the theme, so a
+  // cell filled light stays light while its text turns near-white in dark mode
+  // — the value disappears. When the author set a fill but no text colour,
+  // pick the ink from the fill instead of inheriting it.
+  const fill = (cond?.fill ?? style?.fill) as string | undefined
+  const inkSet = !!(cond?.color ?? style?.color)
+  if (fill && !inkSet) {
+    const ink = readableInk(fill)
+    if (ink) s.color = ink
+  }
   return s
+}
+
+/**
+ * Black or white, whichever reads better on `fill`. Returns null for colours we
+ * cannot parse (named colours, gradients) so the theme default still applies.
+ */
+export function readableInk(fill: string): string | null {
+  const rgb = parseCssColor(fill)
+  if (!rgb) return null
+  const lin = (c: number) => {
+    const v = c / 255
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  }
+  const L = 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2])
+  // Contrast against white is (1.05)/(L+0.05); against black it is (L+0.05)/0.05.
+  // They cross at L ≈ 0.179, which is the right threshold to flip the ink.
+  return L > 0.179 ? '#15181e' : '#f7f8fa'
+}
+
+/** #rgb, #rrggbb and rgb()/rgba() — the forms cell fills are actually stored in. */
+export function parseCssColor(input: string): [number, number, number] | null {
+  const s = input.trim()
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(s)
+  if (hex) {
+    const h = hex[1]
+    const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h
+    return [
+      parseInt(full.slice(0, 2), 16),
+      parseInt(full.slice(2, 4), 16),
+      parseInt(full.slice(4, 6), 16),
+    ]
+  }
+  const fn = /^rgba?\(([^)]+)\)$/i.exec(s)
+  if (fn) {
+    const parts = fn[1].split(/[\s,/]+/).filter(Boolean).map(Number)
+    if (parts.length >= 3 && parts.slice(0, 3).every((n) => Number.isFinite(n))) {
+      return [parts[0], parts[1], parts[2]]
+    }
+  }
+  return null
 }
 
 export default function Grid({

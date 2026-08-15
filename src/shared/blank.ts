@@ -1,4 +1,11 @@
-import type { AnyContent, AppKind, DocsContent, SheetsContent, SlidesContent } from './types'
+import type {
+  AnyContent,
+  AppKind,
+  DocsContent,
+  FormsContent,
+  SheetsContent,
+  SlidesContent,
+} from './types'
 import { uid } from './types'
 
 export function blankDocs(): DocsContent {
@@ -50,9 +57,40 @@ export function blankSlides(): SlidesContent {
   }
 }
 
+/** The default look for a new form — the same blue the suite uses elsewhere. */
+export const DEFAULT_FORM_THEME = {
+  accent: '#7c3aed',
+  headerFrom: '#7c3aed',
+  headerTo: '#4f46e5',
+  headerColor: '#ffffff',
+  fontFamily: 'System (San Francisco)',
+}
+
+export function blankForms(): FormsContent {
+  return {
+    description: '',
+    questions: [
+      {
+        id: uid(),
+        kind: 'short',
+        title: 'Untitled question',
+        required: false,
+      },
+    ],
+    theme: { ...DEFAULT_FORM_THEME },
+    responses: [],
+    settings: {
+      confirmation: 'Thanks — your response has been recorded.',
+      showQuestionNumbers: false,
+      showProgress: true,
+    },
+  }
+}
+
 export function blankContent(kind: AppKind): AnyContent {
   if (kind === 'docs') return blankDocs()
   if (kind === 'sheets') return blankSheets()
+  if (kind === 'forms') return blankForms()
   return blankSlides()
 }
 
@@ -60,10 +98,12 @@ export const APP_NAMES: Record<AppKind, string> = {
   docs: 'Anleo Docs',
   sheets: 'Anleo Sheets',
   slides: 'Anleo Slides',
+  forms: 'Anleo Forms',
 }
 
 export const NEW_TITLES: Record<AppKind, string> = {
   docs: 'Untitled document',
   sheets: 'Untitled spreadsheet',
   slides: 'Untitled presentation',
+  forms: 'Untitled form',
 }

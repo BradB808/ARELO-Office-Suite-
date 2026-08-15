@@ -1,6 +1,6 @@
 // ---------- Core document model shared by all three apps ----------
 
-export type AppKind = 'docs' | 'sheets' | 'slides'
+export type AppKind = 'docs' | 'sheets' | 'slides' | 'forms'
 
 export interface DocMeta {
   id: string
@@ -254,9 +254,92 @@ export interface SlidesContent {
   showSlideNumbers?: boolean
 }
 
+// ---------- Forms (surveys and questionnaires) ----------
+//
+// Google Forms is a server product: you publish a link, and responses land in
+// someone else's database. Anleo has no server, so the round trip works
+// differently — a form is exported as one self-contained HTML file, the person
+// filling it in gets a response file (or a paste-able code) back, and the
+// author imports those. Nobody in the middle ever sees the answers.
+
+export type QuestionKind =
+  | 'short'
+  | 'paragraph'
+  | 'choice'
+  | 'checkboxes'
+  | 'dropdown'
+  | 'scale'
+  | 'date'
+  | 'time'
+  | 'email'
+  | 'number'
+  /** Not a question — a heading and blurb that breaks the form into parts. */
+  | 'section'
+
+export interface FormOption {
+  id: string
+  label: string
+}
+
+export interface FormQuestion {
+  id: string
+  kind: QuestionKind
+  title: string
+  /** Smaller explanatory line under the title. */
+  help?: string
+  required?: boolean
+  /** choice | checkboxes | dropdown */
+  options?: FormOption[]
+  /** Adds a free-text "Other" entry to choice and checkboxes. */
+  otherOption?: boolean
+  /** scale */
+  scaleMin?: number
+  scaleMax?: number
+  scaleMinLabel?: string
+  scaleMaxLabel?: string
+  /** number */
+  min?: number
+  max?: number
+  /** short | paragraph | email | number */
+  placeholder?: string
+  /** paragraph */
+  rows?: number
+}
+
+export interface FormTheme {
+  accent: string
+  headerFrom: string
+  headerTo: string
+  headerColor: string
+  fontFamily: string
+}
+
+/** One person's answers. Checkboxes yield an array; everything else a string. */
+export interface FormResponse {
+  id: string
+  submittedAt: number
+  answers: Record<string, string | string[]>
+}
+
+export interface FormsContent {
+  description: string
+  questions: FormQuestion[]
+  theme: FormTheme
+  /** Responses live in the document, so the form and its data are one file. */
+  responses: FormResponse[]
+  settings: {
+    /** Shown after the respondent submits. */
+    confirmation: string
+    /** Number the questions in the exported form. */
+    showQuestionNumbers?: boolean
+    /** Show a progress bar as they fill it in. */
+    showProgress?: boolean
+  }
+}
+
 // ---------- Unified ----------
 
-export type AnyContent = DocsContent | SheetsContent | SlidesContent
+export type AnyContent = DocsContent | SheetsContent | SlidesContent | FormsContent
 
 export interface AnleoDocument {
   meta: DocMeta
@@ -288,6 +371,7 @@ export interface Template<T extends AnyContent = AnyContent> {
 export type DocsTemplate = Template<DocsContent>
 export type SheetsTemplate = Template<SheetsContent>
 export type SlidesTemplate = Template<SlidesContent>
+export type FormsTemplate = Template<FormsContent>
 
 // ---------- Editor app component contract ----------
 

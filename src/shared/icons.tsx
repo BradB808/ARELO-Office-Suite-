@@ -151,7 +151,51 @@ export function IcCheck() {
 }
 
 /** Filled, colorful app tiles used in the rail, hub, and dock. */
-export function AppGlyph({ kind, size = 30 }: { kind: 'docs' | 'sheets' | 'slides'; size?: number }) {
+export function AppGlyph({
+  kind,
+  size = 30,
+}: {
+  kind: 'docs' | 'sheets' | 'slides' | 'forms'
+  size?: number
+}) {
+  if (kind === 'forms') {
+    // A checklist on a card: two ticked rows and one waiting to be answered.
+    return (
+      <svg viewBox="0 0 40 40" width={size} height={size}>
+        <rect x="2" y="2" width="36" height="36" rx="9.5" fill="#7c3aed" />
+        <rect x="2" y="2" width="36" height="36" rx="9.5" fill="url(#agf)" />
+        <defs>
+          <linearGradient id="agf" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.18" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <rect x="10" y="9.5" width="20" height="21" rx="2.4" fill="#fff" fillOpacity="0.95" />
+        <path
+          d="M13.4 14.6l1.5 1.5 2.6-2.7"
+          stroke="#7c3aed"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M13.4 20.1l1.5 1.5 2.6-2.7"
+          stroke="#7c3aed"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="14.6" cy="26.1" r="1.9" stroke="#7c3aed" strokeWidth="1.5" />
+        <path
+          d="M19.9 14.9h6.8M19.9 20.4h6.8M19.9 25.9h4.4"
+          stroke="#7c3aed"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeOpacity="0.5"
+        />
+      </svg>
+    )
+  }
   if (kind === 'docs') {
     return (
       <svg viewBox="0 0 40 40" width={size} height={size}>

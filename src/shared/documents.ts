@@ -10,12 +10,14 @@ const FILE_EXT: Record<AppKind, string> = {
   docs: 'adoc',
   sheets: 'asheet',
   slides: 'aslides',
+  forms: 'aform',
 }
 
 const FILE_DESC: Record<AppKind, string> = {
   docs: 'Anleo Docs Document',
   sheets: 'Anleo Sheets Spreadsheet',
   slides: 'Anleo Slides Presentation',
+  forms: 'Anleo Forms Form',
 }
 
 export function extFor(kind: AppKind): string {
@@ -39,7 +41,7 @@ export function parseDocument(json: string): AnleoDocument | null {
     const obj = JSON.parse(json)
     if (!obj || typeof obj !== 'object' || !obj.meta || !obj.content) return null
     const kind = obj.meta.kind
-    if (kind !== 'docs' && kind !== 'sheets' && kind !== 'slides') return null
+    if (kind !== 'docs' && kind !== 'sheets' && kind !== 'slides' && kind !== 'forms') return null
     return { meta: obj.meta, content: obj.content }
   } catch {
     return null

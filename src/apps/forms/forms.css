@@ -1,0 +1,491 @@
+/* ============ Anleo Forms — all classes prefixed fm- ============ */
+
+.fm-root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.fm-toolbar {
+  row-gap: 4px;
+}
+
+.fm-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.fm-theme-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.fm-theme-swatch {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+}
+
+/* ---------- tabs ---------- */
+
+.fm-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.fm-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  /* Sits on top of the strip's own border so the active underline replaces it. */
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.14s var(--ease), border-color 0.14s var(--ease);
+}
+.fm-tab:hover {
+  color: var(--text);
+}
+.fm-tab.on {
+  color: var(--accent-text);
+  border-bottom-color: var(--accent-text);
+}
+.fm-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 650;
+}
+.fm-tab.on .fm-tab-count {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+/* ---------- page ---------- */
+
+.fm-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--canvas);
+  padding: 22px 18px 90px;
+}
+
+.fm-page {
+  width: min(760px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* --fm-accent is set inline from the form's own theme, and every one of those
+     is chosen to sit under white header text — Graphite and Forest land at
+     ~2.2:1 on the dark editor surface. Chrome that has to be read or noticed
+     uses this lifted version; fills that only need to differ from a neutral
+     (the toggle track) keep the true accent. */
+  /* Slightly deepened so accent-on-tint chrome clears 4.5:1 for every theme,
+     not just the darker ones. */
+  --fm-accent-ink: color-mix(in srgb, var(--fm-accent) 86%, #000);
+}
+[data-theme='dark'] .fm-page {
+  --fm-accent-ink: color-mix(in srgb, var(--fm-accent) 45%, var(--text));
+}
+
+.fm-header-card {
+  border-radius: var(--radius-l);
+  padding: 26px 26px 22px;
+  box-shadow: var(--shadow-m);
+  overflow: hidden;
+}
+.fm-title-input,
+.fm-desc-input {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0 0 4px;
+  border: none;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  outline: none;
+  /* Both sit on the themed gradient, so they take the header's own text colour. */
+  color: inherit;
+  font-family: inherit;
+}
+.fm-title-input {
+  font-size: 27px;
+  font-weight: 680;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.fm-desc-input {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  resize: none;
+  overflow: hidden;
+  opacity: 0.92;
+}
+.fm-title-input::placeholder,
+.fm-desc-input::placeholder {
+  color: currentColor;
+  opacity: 0.55;
+}
+.fm-title-input:focus,
+.fm-desc-input:focus {
+  border-bottom-color: currentColor;
+}
+
+/* ---------- question cards ---------- */
+
+.fm-qcard {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.14s var(--ease), box-shadow 0.14s var(--ease);
+}
+.fm-qcard:hover {
+  border-color: var(--border-strong);
+}
+.fm-qcard.selected {
+  cursor: default;
+  padding-left: 20px;
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-m);
+}
+.fm-qcard.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -1px;
+  bottom: -1px;
+  width: 5px;
+  border-radius: var(--radius-m) 0 0 var(--radius-m);
+  background: var(--fm-accent-ink);
+}
+.fm-qcard.section {
+  background: var(--surface-2);
+}
+
+.fm-qhead {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.fm-qnum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.fm-qcard.selected .fm-qnum {
+  background: color-mix(in srgb, var(--fm-accent-ink) 16%, transparent);
+  color: var(--fm-accent-ink);
+}
+
+.fm-qsummary {
+  flex: 1;
+  min-width: 0;
+}
+.fm-qsummary-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fm-qsummary-title.placeholder {
+  font-weight: 500;
+  color: var(--text-3);
+}
+.fm-qsummary-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.fm-req-mark {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* ---------- question editor ---------- */
+
+.fm-erow {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.fm-grow {
+  flex: 1;
+  min-width: 0;
+}
+.fm-estack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.fm-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.13s var(--ease), box-shadow 0.13s var(--ease);
+}
+.fm-input:focus {
+  border-color: var(--fm-accent-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fm-accent-ink) 18%, transparent);
+}
+.fm-input::placeholder {
+  color: var(--text-3);
+}
+textarea.fm-input {
+  height: auto;
+  padding: 8px 10px;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: var(--font-ui);
+}
+.fm-input-title {
+  height: 36px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.fm-num {
+  width: 80px;
+}
+
+.fm-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+}
+.fm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fm-field > span {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+}
+
+/* ---------- options ---------- */
+
+.fm-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fm-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fm-opt-mark {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  border: 1.6px solid var(--text-3);
+}
+.fm-opt-mark.round {
+  border-radius: 50%;
+}
+.fm-opt-mark.square {
+  border-radius: 4px;
+}
+.fm-opt-mark.num {
+  border: none;
+  color: var(--text-3);
+  font-size: 11.5px;
+  line-height: 15px;
+  text-align: center;
+}
+.fm-opt-other {
+  padding-left: 3px;
+  font-size: 13px;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+/* ---------- actions ---------- */
+
+.fm-qactions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border);
+}
+
+.fm-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 7px;
+  border: none;
+  border-radius: var(--radius-s);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fm-toggle:hover {
+  background: var(--surface-3);
+}
+.fm-toggle.on {
+  color: var(--text);
+}
+.fm-toggle-track {
+  position: relative;
+  flex-shrink: 0;
+  width: 32px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  transition: background 0.15s var(--ease);
+}
+.fm-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  /* Contrasts with the track in both themes by construction. */
+  background: var(--surface);
+  box-shadow: var(--shadow-s);
+  transition: transform 0.15s var(--ease);
+}
+.fm-toggle.on .fm-toggle-track {
+  background: var(--fm-accent);
+}
+.fm-toggle.on .fm-toggle-knob {
+  background: var(--accent-contrast);
+  transform: translateX(14px);
+}
+
+.fm-add-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+/* ---------- trailing settings card ---------- */
+
+.fm-settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+  padding: 14px 16px;
+}
+.fm-card-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+}
+.fm-card-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+/* ---------- preview ---------- */
+
+.fm-preview-frame {
+  display: block;
+  width: 100%;
+  height: min(64vh, 620px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+
+/* ---------- toast ---------- */
+
+.fm-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  border-radius: var(--radius-m);
+  padding: 9px 16px;
+  font-size: 12.5px;
+  font-weight: 500;
+  box-shadow: var(--shadow-pop);
+  animation: fm-toast-in 0.18s var(--ease);
+  z-index: 2500;
+  pointer-events: none;
+}
+@keyframes fm-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+}

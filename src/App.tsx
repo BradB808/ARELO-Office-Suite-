@@ -28,6 +28,7 @@ import { PrivacyPanel } from './shared/PrivacyPanel'
 import DocsApp from './apps/docs/DocsApp'
 import SheetsApp from './apps/sheets/SheetsApp'
 import SlidesApp from './apps/slides/SlidesApp'
+import FormsApp from './apps/forms/FormsApp'
 
 type Route = { view: 'home' } | { view: 'templates' } | { view: 'editor'; kind: AppKind }
 
@@ -243,6 +244,24 @@ export default function App() {
     })
   }, [openInEditor])
 
+  // Lets an app hand a freshly-built document to the shell — Forms uses it to
+  // push collected responses into a real spreadsheet, so the analysis tools in
+  // Sheets apply to survey data without any export/import dance.
+  useEffect(() => {
+    const onOpenDoc = (e: Event) => {
+      const detail = (e as CustomEvent).detail as
+        | { kind: AppKind; title: string; content: AnyContent }
+        | undefined
+      if (!detail?.kind || !detail.content) return
+      const doc = newDocument(detail.kind, detail.title || NEW_TITLES[detail.kind], detail.content)
+      openInEditor(doc)
+      scheduleAutosave(doc)
+      showToast(`Opened “${doc.meta.title}” in ${APP_NAMES[detail.kind].replace('Anleo ', '')}`)
+    }
+    window.addEventListener('anleo-open-doc', onOpenDoc)
+    return () => window.removeEventListener('anleo-open-doc', onOpenDoc)
+  }, [openInEditor, scheduleAutosave, showToast])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey
@@ -301,6 +320,14 @@ export default function App() {
         run: () => handleNew('slides'),
       },
       {
+        id: 'new-form',
+        title: 'New form',
+        group: 'Create',
+        hint: 'Forms',
+        keywords: 'survey questionnaire poll quiz google forms',
+        run: () => handleNew('forms'),
+      },
+      {
         id: 'browse-templates',
         title: 'Browse all templates',
         group: 'Create',
@@ -320,7 +347,7 @@ export default function App() {
         }),
       ),
       { id: 'go-home', title: 'Go to home', group: 'Navigate', run: () => setRoute({ view: 'home' }) },
-      ...(['docs', 'sheets', 'slides'] as AppKind[]).map(
+      ...(['docs', 'sheets', 'slides', 'forms'] as AppKind[]).map(
         (kind): Command => ({
           id: 'switch-' + kind,
           title: `Switch to ${APP_NAMES[kind]}`,
@@ -401,7 +428,7 @@ export default function App() {
 
         <div className="rail-sep" />
 
-        {(['docs', 'sheets', 'slides'] as AppKind[]).map((kind) => (
+        {(['docs', 'sheets', 'slides', 'forms'] as AppKind[]).map((kind) => (
           <button
             key={kind}
             className={'rail-btn app' + (currentKind === kind ? ' active' : '')}
@@ -513,6 +540,7 @@ export default function App() {
               {currentDoc.meta.kind === 'docs' && <DocsApp {...editorProps} />}
               {currentDoc.meta.kind === 'sheets' && <SheetsApp {...editorProps} />}
               {currentDoc.meta.kind === 'slides' && <SlidesApp {...editorProps} />}
+              {currentDoc.meta.kind === 'forms' && <FormsApp {...editorProps} />}
             </div>
           </div>
         )}
@@ -550,7 +578,7 @@ export default function App() {
           <PrivacyPanel />
 
           <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6, marginTop: 18 }}>
-            Anleo Office · Docs, Sheets &amp; Slides
+            Anleo Office · Docs, Sheets, Slides &amp; Forms
             <br />
             Free forever. No accounts, no subscription, no tracking.
           </div>

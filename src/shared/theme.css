@@ -8,9 +8,21 @@
   --c-sheets-soft: #d1fae5;
   --c-slides: #ea580c;
   --c-slides-soft: #ffedd5;
+  --c-forms: #7c3aed;
+  --c-forms-soft: #ede9fe;
+
+  /* Accent used as TEXT. Identical to the accent in light mode, but lightened
+     for dark mode — the brand colours are tuned for white backgrounds and drop
+     to ~2:1 against a dark surface, which is unreadable. Kept separate from
+     --accent so solid accent buttons keep their darker fill under white text. */
+  --c-docs-text: var(--c-docs);
+  --c-sheets-text: var(--c-sheets);
+  --c-slides-text: var(--c-slides);
+  --c-forms-text: var(--c-forms);
 
   --accent: var(--c-docs);
   --accent-soft: var(--c-docs-soft);
+  --accent-text: var(--c-docs-text);
   --accent-contrast: #ffffff;
 
   /* Light surfaces (Google-workspace-ish airy grays) */
@@ -23,7 +35,7 @@
   --border-strong: rgba(15, 18, 25, 0.18);
   --text: #171a21;
   --text-2: #4b5160;
-  --text-3: #8a90a0;
+  --text-3: #656c7c;
   --canvas: #f1f3f5;
 
   --danger: #dc2626;
@@ -66,6 +78,14 @@
   --c-docs-soft: rgba(37, 99, 235, 0.22);
   --c-sheets-soft: rgba(5, 150, 105, 0.22);
   --c-slides-soft: rgba(234, 88, 12, 0.24);
+  --c-forms-soft: rgba(124, 58, 237, 0.26);
+
+  /* Measured against each app's own soft tint over the dark surface: all clear
+     4.5:1. Verified by scripts/contrast-check.cjs. */
+  --c-docs-text: #7dabf8;
+  --c-sheets-text: #34d399;
+  --c-slides-text: #fb923c;
+  --c-forms-text: #b49dfb;
 
   --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-m: 0 4px 16px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
@@ -76,14 +96,22 @@
 [data-app='docs'] {
   --accent: var(--c-docs);
   --accent-soft: var(--c-docs-soft);
+  --accent-text: var(--c-docs-text);
 }
 [data-app='sheets'] {
   --accent: var(--c-sheets);
   --accent-soft: var(--c-sheets-soft);
+  --accent-text: var(--c-sheets-text);
 }
 [data-app='slides'] {
   --accent: var(--c-slides);
   --accent-soft: var(--c-slides-soft);
+  --accent-text: var(--c-slides-text);
+}
+[data-app='forms'] {
+  --accent: var(--c-forms);
+  --accent-soft: var(--c-forms-soft);
+  --accent-text: var(--c-forms-text);
 }
 
 /* ============ Base ============ */
@@ -198,7 +226,7 @@ select {
 }
 .btn.soft {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .btn.soft:hover {
   background: color-mix(in srgb, var(--accent) 24%, transparent);
@@ -243,7 +271,7 @@ select {
 }
 .iconbtn.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .iconbtn:disabled {
   opacity: 0.38;
@@ -342,7 +370,7 @@ select {
 }
 .popover-item.selected {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 500;
 }
 .popover-item.danger {
@@ -481,7 +509,7 @@ select {
   padding: 0 8px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 11px;
   font-weight: 600;
 }

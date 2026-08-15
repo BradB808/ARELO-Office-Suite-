@@ -37,7 +37,9 @@ export const LIVING_BASE_CSS = `
     padding: 10px 18px; background: var(--surface);
     border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10;
   }
-  .anleo-bar h1 { font-size: 14px; font-weight: 650; margin: 0; }
+  /* A title holding a URL has nothing to break on, and the bar is a flex row:
+     without this it sets the width of the page and a phone scrolls sideways. */
+  .anleo-bar h1 { font-size: 14px; font-weight: 650; margin: 0; overflow-wrap: anywhere; }
   .anleo-bar .spacer { flex: 1; }
   .anleo-badge {
     font-size: 11px; color: var(--muted); border: 1px solid var(--line);

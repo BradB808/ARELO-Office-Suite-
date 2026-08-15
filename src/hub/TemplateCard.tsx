@@ -6,6 +6,7 @@ const KIND_LABEL: Record<AppKind, string> = {
   docs: 'Docs',
   sheets: 'Sheets',
   slides: 'Slides',
+  forms: 'Forms',
 }
 
 export function TemplateCard({

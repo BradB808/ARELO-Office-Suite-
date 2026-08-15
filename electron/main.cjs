@@ -462,7 +462,7 @@ app.whenReady().then(() => {
 
   buildMenu()
   createWindow()
-  const fileArg = process.argv.find((a) => /\.(adoc|asheet|aslides)$/i.test(a))
+  const fileArg = process.argv.find((a) => /\.(adoc|asheet|aslides|aform)$/i.test(a))
   if (fileArg) pendingOpenPath = fileArg
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

@@ -2,7 +2,7 @@
 
 # Anleo Office
 
-**Documents, spreadsheets and presentations in one Mac app.**
+**Documents, spreadsheets, presentations and forms in one Mac app.**
 Free, open source, and completely offline — it makes no network requests at all.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
@@ -33,7 +33,7 @@ It is free because it costs nothing to run: there is no server anywhere.
 
 ## Contents
 
-- [The three apps](#the-three-apps)
+- [The four apps](#the-four-apps)
 - [Why it's private](#why-its-private)
 - [Things Word and Google Docs don't do](#things-word-and-google-docs-dont-do)
 - [Install](#install)
@@ -43,7 +43,7 @@ It is free because it costs nothing to run: there is no server anywhere.
 
 ---
 
-## The three apps
+## The four apps
 
 ### Anleo Docs
 
@@ -87,10 +87,33 @@ Themes, layouts, 15 shape types with gradient fills and arrowheads, align and
 distribute, transitions, slide numbers, speaker notes, and a presenter view
 with notes and a timer. Exports to pptx and PDF.
 
-### 80 templates
+### Anleo Forms
 
-Résumés, invoices, budgets, pitch decks, lesson plans, habit trackers and
-newsletters — searchable and filterable, across all three apps.
+![Anleo Forms](docs/screenshots/forms.png)
+
+Surveys, RSVPs, feedback and quizzes — eleven question types, sections, help
+text, required fields, themes, and a live preview of exactly what people will
+see.
+
+Google Forms needs a server: you publish a link and the answers land in
+Google's database. Anleo has no server, so the round trip works differently —
+and better, if you care who reads the answers:
+
+1. Export the form as **one self-contained `.html` file**.
+2. Send it however you like — email, AirDrop, a USB stick.
+3. They open it in any browser, **offline**, and fill it in.
+4. They get a small response file (or a code they can paste) and send it back.
+5. You import it, and answers aggregate with per-question summaries.
+
+No link to publish, no account for anyone, and no third party in the middle. The
+exported page carries a policy that forbids it from contacting anything, so a
+respondent can verify that before typing a word. Responses export to CSV or go
+straight into a spreadsheet in Anleo Sheets.
+
+### 90 templates
+
+Résumés, invoices, budgets, pitch decks, lesson plans, habit trackers,
+newsletters and forms — searchable and filterable, across all four apps.
 
 ---
 
@@ -246,6 +269,7 @@ src/
   apps/docs/      TipTap editor, import/export, floating images
   apps/sheets/    grid, formula engine (tokenizer → parser → evaluator)
   apps/slides/    canvas editor, present mode, pptx export
+  apps/forms/     form builder, fillable HTML export, response collection
   shared/         cross-app: AI, live links, sanitizer, theming, exports
   shell/          command palette, shortcuts help
   templates/      the 80 templates

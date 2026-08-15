@@ -28,6 +28,7 @@ const SHOTS = [
   { file: 'docs.png', app: 'docs', template: 'Modern resume', label: 'Anleo Docs' },
   { file: 'sheets.png', app: 'sheets', template: 'Monthly budget', label: 'Anleo Sheets' },
   { file: 'slides.png', app: 'slides', template: 'Startup pitch', label: 'Anleo Slides' },
+  { file: 'forms.png', app: 'forms', template: 'Event RSVP', label: 'Anleo Forms' },
 ]
 
 /**

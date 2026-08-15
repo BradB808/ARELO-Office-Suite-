@@ -131,7 +131,7 @@
 }
 .sx-colhead.sel {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .sx-colresize {
   position: absolute;
@@ -167,7 +167,7 @@
 }
 .sx-rowhead.sel {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .sx-rowresize {
   position: absolute;
@@ -238,7 +238,7 @@
 }
 .sx-filter-btn.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .sx-dd-chevron {
@@ -292,7 +292,7 @@
 }
 .sx-dd-item:hover {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .sx-filter-row {
@@ -308,7 +308,7 @@
   background: var(--surface-3);
 }
 .sx-filter-row input[type='checkbox'] {
-  accent-color: var(--accent);
+  accent-color: var(--accent-text);
   cursor: pointer;
 }
 .sx-filter-row span {
@@ -428,7 +428,7 @@
 }
 .sx-tab.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   border-color: transparent;
 }
