@@ -93,11 +93,26 @@ function coerceResponse(value: unknown): FormResponse | null {
     else if (typeof v === 'number' && Number.isFinite(v)) answers[key] = String(v)
     else if (Array.isArray(v)) answers[key] = v.filter((x): x is string => typeof x === 'string')
   }
-  return {
+  const out: FormResponse = {
     id: typeof raw.id === 'string' && raw.id ? raw.id : uid(),
     submittedAt: typeof raw.submittedAt === 'number' && Number.isFinite(raw.submittedAt) ? raw.submittedAt : Date.now(),
     answers,
   }
+  const score = coerceScore((value as { score?: unknown }).score)
+  if (score) out.score = score
+  return out
+}
+
+/** A quiz score marked by the exported page. Dropped rather than repaired when
+ *  it is nonsense: a wrong score in the author's table is worse than none. */
+function coerceScore(value: unknown): FormResponse['score'] | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const raw = value as { earned?: unknown; total?: unknown }
+  const earned = Number(raw.earned)
+  const total = Number(raw.total)
+  if (!Number.isFinite(earned) || !Number.isFinite(total)) return null
+  if (total <= 0 || earned < 0 || earned > total) return null
+  return { earned, total }
 }
 
 // A .aresp file is a note to a human with the code on its own line, so pull out
@@ -155,13 +170,36 @@ function sheetField(s: string): string {
   return s.startsWith('=') ? `'${s}` : s
 }
 
-function responseRow(cols: FormQuestion[], r: FormResponse): string[] {
-  return [submittedAtLabel(r.submittedAt), ...cols.map((q) => answerToText(q, r.answers[q.id]))]
+/**
+ * Marks get their own two columns, and only on a form where somebody has
+ * actually been marked — an ordinary survey's CSV keeps exactly the shape it
+ * has always had. Two numeric columns rather than one "7 / 10" cell because the
+ * author's next move is usually to average them.
+ */
+function isScored(responses: FormResponse[]): boolean {
+  return responses.some((r) => r.score !== undefined)
+}
+
+function scoreCells(r: FormResponse): string[] {
+  return r.score ? [String(r.score.earned), String(r.score.total)] : ['', '']
+}
+
+function headerRow(cols: FormQuestion[], scored: boolean): string[] {
+  return ['Submitted', ...(scored ? ['Score', 'Out of'] : []), ...cols.map((q) => q.title)]
+}
+
+function responseRow(cols: FormQuestion[], r: FormResponse, scored: boolean): string[] {
+  return [
+    submittedAtLabel(r.submittedAt),
+    ...(scored ? scoreCells(r) : []),
+    ...cols.map((q) => answerToText(q, r.answers[q.id])),
+  ]
 }
 
 export function responsesToCsv(questions: FormQuestion[], responses: FormResponse[]): string {
   const cols = questions.filter(isAnswerable)
-  const rows = [['Submitted', ...cols.map((q) => q.title)], ...responses.map((r) => responseRow(cols, r))]
+  const scored = isScored(responses)
+  const rows = [headerRow(cols, scored), ...responses.map((r) => responseRow(cols, r, scored))]
   return rows.map((row) => row.map(csvField).join(',')).join('\r\n')
 }
 
@@ -186,19 +224,24 @@ function columnWidth(q: FormQuestion): number {
 
 export function responsesToSheet(questions: FormQuestion[], responses: FormResponse[]): SheetsContent {
   const cols = questions.filter(isAnswerable)
+  const scored = isScored(responses)
   const cells: Record<string, Cell> = {}
-  cells[colRef(0, 1)] = { v: 'Submitted', style: HEADER_STYLE }
-  cols.forEach((q, c) => {
-    cells[colRef(c + 1, 1)] = { v: sheetField(q.title), style: HEADER_STYLE }
+  headerRow(cols, scored).forEach((title, c) => {
+    cells[colRef(c, 1)] = { v: sheetField(title), style: HEADER_STYLE }
   })
   responses.forEach((r, i) => {
-    responseRow(cols, r).forEach((value, c) => {
+    responseRow(cols, r, scored).forEach((value, c) => {
       if (value !== '') cells[colRef(c, i + 2)] = { v: sheetField(value) }
     })
   })
+  const lead = scored ? 3 : 1
   const colWidths: Record<number, number> = { 0: 150 }
+  if (scored) {
+    colWidths[1] = 90
+    colWidths[2] = 90
+  }
   cols.forEach((q, c) => {
-    colWidths[c + 1] = columnWidth(q)
+    colWidths[c + lead] = columnWidth(q)
   })
   const sheet: Sheet = {
     name: 'Responses',
@@ -270,4 +313,44 @@ export function summarize(q: FormQuestion, responses: FormResponse[]): Summary {
   summary.buckets = [...counts].map(([label, count]) => ({ label, count }))
   if (numeric > 0) summary.average = total / numeric
   return summary
+}
+
+// ---------- quiz results across a whole class ----------
+
+export interface ScoreStats {
+  /** How many responses carried a score at all. */
+  count: number
+  average: number
+  highest: number
+  lowest: number
+  /** Marks available. The largest seen, so a paper edited half way through a
+   *  class never reads as "highest 10, out of 5". */
+  outOf: number
+  /** Five bands of the percentage scored, lowest first. */
+  distribution: { label: string; count: number }[]
+}
+
+// Bands rather than one bar per distinct mark: a class of thirty on a
+// twenty-mark paper produces a comb of ones otherwise. The labels are exact so
+// nobody has to guess which side of 40% a 40% lands on.
+const BANDS = ['0–19%', '20–39%', '40–59%', '60–79%', '80–100%']
+
+/** Null when no response has been marked — the panel then shows nothing. */
+export function scoreStats(responses: FormResponse[]): ScoreStats | null {
+  const scored = responses.filter((r) => r.score && r.score.total > 0)
+  if (!scored.length) return null
+  const marks = scored.map((r) => r.score!.earned)
+  const distribution = BANDS.map((label) => ({ label, count: 0 }))
+  for (const r of scored) {
+    const pct = (r.score!.earned / r.score!.total) * 100
+    distribution[Math.min(BANDS.length - 1, Math.max(0, Math.floor(pct / 20)))].count++
+  }
+  return {
+    count: scored.length,
+    average: Math.round((marks.reduce((a, b) => a + b, 0) / marks.length) * 100) / 100,
+    highest: Math.max(...marks),
+    lowest: Math.min(...marks),
+    outOf: Math.max(...scored.map((r) => r.score!.total)),
+    distribution,
+  }
 }

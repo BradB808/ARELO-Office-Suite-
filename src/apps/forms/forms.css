@@ -361,6 +361,123 @@ textarea.fm-input {
   font-style: italic;
 }
 
+/* ---------- answer key and branching ---------- */
+
+.fm-optgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fm-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color 0.12s var(--ease), background 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+.fm-key:hover {
+  color: var(--text);
+  border-color: var(--text-3);
+}
+.fm-key.on {
+  color: var(--ok);
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+
+.fm-keylist {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.fm-keyrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+/* The tick in a typed answer row is a label, not a control — the row exists
+   only to hold answers that count as right. */
+.fm-keyrow .fm-key {
+  cursor: default;
+}
+
+.fm-branch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  /* Lines up under the option's text box rather than its marker, so the route
+     reads as belonging to the answer above it. */
+  padding-left: 25px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.fm-branch-arrow {
+  color: var(--fm-accent-ink);
+  font-size: 13px;
+}
+
+.fm-quiz-block {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+
+.fm-meta-key,
+.fm-meta-branch {
+  color: var(--text-2);
+}
+
+/* ---------- branch warnings ---------- */
+
+.fm-warn-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--border));
+  border-radius: var(--radius-m);
+  background: color-mix(in srgb, var(--warn) 10%, var(--surface));
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.fm-warn-card strong {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text);
+}
+.fm-warn-card span {
+  color: var(--text-2);
+}
+
+.fm-qwarn {
+  margin-top: 9px;
+  padding: 7px 10px;
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  /* --warn on its own tint measures 4.25:1 in light mode. Pulled towards the
+     text colour rather than towards black, so the same rule deepens it in
+     light mode and lifts it in dark. */
+  color: color-mix(in srgb, var(--warn) 78%, var(--text));
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
 /* ---------- actions ---------- */
 
 .fm-qactions {

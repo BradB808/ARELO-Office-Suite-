@@ -22,6 +22,7 @@ interface Spec {
   theme: string
   confirmation: string
   numbered?: boolean
+  quiz?: boolean
   questions: FormQuestion[]
 }
 
@@ -35,7 +36,63 @@ function form(spec: Spec): FormsContent {
       confirmation: spec.confirmation,
       showQuestionNumbers: spec.numbered ?? false,
       showProgress: true,
+      quizMode: spec.quiz ?? false,
+      showScore: spec.quiz ?? false,
     },
+  }
+}
+
+/**
+ * A marked question. The key is option ids, not labels, so `keyed` builds the
+ * options and the key together — hand-writing ids is how a template ends up
+ * marking an answer nobody can pick.
+ */
+function marked(
+  kind: QuestionKind,
+  title: string,
+  labels: string[],
+  right: number[],
+  extra: Partial<FormQuestion> = {},
+): FormQuestion {
+  const options = opts(...labels)
+  return {
+    id: uid(),
+    kind,
+    title,
+    required: true,
+    options,
+    correct: right.map((i) => options[i].id),
+    points: 1,
+    ...extra,
+  }
+}
+
+/** A marked question whose answer is typed: several accepted wordings, compared
+ *  trimmed and case-insensitively. */
+function typed(kind: QuestionKind, title: string, accepted: string[], extra: Partial<FormQuestion> = {}): FormQuestion {
+  return { id: uid(), kind, title, required: true, correct: accepted, points: 1, ...extra }
+}
+
+/** A section, kept in a variable because branches point at it by id. */
+function section(title: string, help?: string): FormQuestion {
+  return { id: uid(), kind: 'section', title, ...(help ? { help } : {}) }
+}
+
+/** A question whose answers route onward: one target per option, in order. */
+function routed(
+  title: string,
+  options: FormOption[],
+  goTo: string[],
+  extra: Partial<FormQuestion> = {},
+): FormQuestion {
+  return {
+    id: uid(),
+    kind: 'choice',
+    title,
+    required: true,
+    options,
+    branches: options.map((o, i) => ({ optionId: o.id, goTo: goTo[i] })).filter((b) => !!b.goTo),
+    ...extra,
   }
 }
 
@@ -641,6 +698,138 @@ function makeConfidentialTip(): FormsContent {
   })
 }
 
+// ---------- 11. Graded quiz ----------
+
+function makeGradedQuiz(): FormsContent {
+  return form({
+    theme: 'ocean',
+    numbered: true,
+    quiz: true,
+    description:
+      'Ten marks. The form marks itself the moment you submit and shows you what you got — nothing is uploaded, and nothing is sent anywhere. Swap in your own questions and answers.',
+    confirmation: 'Marked. Your score is below, along with the answers.',
+    questions: [
+      q('short', 'Your name', { required: true, placeholder: 'So your teacher knows whose paper this is' }),
+      q('section', 'Part one — quick recall', {
+        help: 'One mark each. Take your time; there is no clock running.',
+      }),
+      marked('choice', 'Which planet is closest to the Sun?', ['Venus', 'Mercury', 'Mars', 'Earth'], [1], {
+        feedback: 'Mercury orbits at about 58 million km — Venus is second, at about 108 million.',
+      }),
+      marked(
+        'choice',
+        'What is the chemical symbol for potassium?',
+        ['P', 'K', 'Po', 'Pt'],
+        [1],
+        { feedback: 'K, from the Latin kalium. P is phosphorus.' },
+      ),
+      typed('short', 'What is the capital city of Australia?', ['Canberra'], {
+        help: 'Spelling counts, capitals do not.',
+        feedback: 'Canberra — chosen as a compromise between Sydney and Melbourne.',
+      }),
+      typed('number', 'How many sides does a hexagon have?', ['6', 'six'], {
+        min: 0,
+        max: 100,
+        feedback: 'Six. A heptagon has seven.',
+      }),
+      q('section', 'Part two — worth more'),
+      marked(
+        'checkboxes',
+        'Which of these are noble gases? Tick all of them.',
+        ['Helium', 'Nitrogen', 'Argon', 'Neon', 'Hydrogen'],
+        [0, 2, 3],
+        {
+          points: 3,
+          help: 'Three marks — you get part marks, less one for each wrong tick.',
+          feedback: 'Helium, argon and neon. Nitrogen and hydrogen are reactive, not noble.',
+        },
+      ),
+      marked(
+        'dropdown',
+        'In which year did the Berlin Wall come down?',
+        ['1987', '1988', '1989', '1990'],
+        [2],
+        { points: 2, feedback: 'The crossings opened on 9 November 1989; reunification followed in 1990.' },
+      ),
+      typed('date', 'On what date does the shortest day fall in the northern hemisphere this year?', ['2026-12-21'], {
+        required: false,
+        help: 'Optional — a bonus mark.',
+        feedback: 'The solstice falls on 21 December in most years.',
+      }),
+      q('paragraph', 'Anything you found unclear?', {
+        rows: 3,
+        help: 'Not marked. It just helps whoever set this.',
+      }),
+    ],
+  })
+}
+
+// ---------- 12. Branching support request ----------
+
+function makeBranchingRequest(): FormsContent {
+  // Sections are the pages a branch jumps to, so each one needs an id the
+  // routing can name. One section per route, in the order they can be reached.
+  const software = section('Software and accounts')
+  const hardware = section('Hardware and devices')
+  const access = section('Access and permissions')
+  const wrapUp = section('Before you send it')
+
+  const topic = opts('Something is broken', 'I need a new device or part', 'I need access to something')
+  const everWorked = opts('Yes, it worked until recently', 'No, never for me', 'I do not know')
+  const coping = opts('Yes, with a workaround', 'Only just', 'No, I am stopped')
+
+  return form({
+    theme: 'graphite',
+    description:
+      'Four or five questions, not thirty. Your first answer decides which ones you get — everything that does not apply to you is skipped. Send the response file back and it reaches the right person first time.',
+    confirmation: 'Logged. Send the response file back and someone will pick it up.',
+    questions: [
+      q('short', 'Your name', { required: true }),
+      q('email', 'Email address', { required: true, help: 'Where the reply goes.' }),
+      routed('What do you need?', topic, [software.id, hardware.id, access.id]),
+
+      software,
+      q('short', 'Which app or website?', { required: true, placeholder: 'The name you see when you open it' }),
+      q('paragraph', 'What happens, and what did you expect to happen?', {
+        required: true,
+        rows: 5,
+        help: 'The exact wording of any error message is the single most useful thing you can give us.',
+      }),
+      q('choice', 'How urgent is it?', {
+        required: true,
+        options: opts('I cannot work at all', 'It is slowing me down', 'It can wait'),
+      }),
+      // Nothing on the hardware or access pages applies to a software fault, so
+      // every answer here jumps the respondent past both of them.
+      routed('Has it ever worked?', everWorked, [wrapUp.id, wrapUp.id, wrapUp.id], { required: false }),
+
+      hardware,
+      q('choice', 'What sort of device?', {
+        required: true,
+        options: opts('Laptop', 'Desktop', 'Phone or tablet', 'Monitor or dock', 'Printer', 'Something else'),
+      }),
+      q('short', 'Make and model, if you know it', { placeholder: 'It is usually printed on the underside' }),
+      q('paragraph', 'What is wrong with it, or what do you need?', { required: true, rows: 4 }),
+      routed('Can you still work in the meantime?', coping, [wrapUp.id, wrapUp.id, wrapUp.id]),
+
+      access,
+      q('short', 'What do you need access to?', {
+        required: true,
+        placeholder: 'A system, a shared folder, a mailbox',
+      }),
+      q('choice', 'What level do you need?', {
+        required: true,
+        options: opts('Read only', 'Read and write', 'Administrator'),
+      }),
+      q('short', 'Who has approved this?', { help: 'A manager, or whoever owns the system.' }),
+      q('date', 'When do you need it by?'),
+
+      wrapUp,
+      q('paragraph', 'Anything else we should know?', { rows: 3 }),
+    ],
+  })
+}
+
 export const formsTemplates: FormsTemplate[] = [
   {
     id: 'form-event-rsvp',
@@ -722,6 +911,24 @@ export const formsTemplates: FormsTemplate[] = [
     accent: '#6d28d9',
     glyph: '🔍',
     make: makeProductResearch,
+  },
+  {
+    id: 'form-graded-quiz',
+    name: 'Graded quiz',
+    description: 'Marks itself in the respondent’s browser: an answer key, part marks and feedback, offline.',
+    category: 'Education',
+    accent: '#0e7490',
+    glyph: '✅',
+    make: makeGradedQuiz,
+  },
+  {
+    id: 'form-branching-request',
+    name: 'Branching request form',
+    description: 'One answer decides the rest: three routes through the form, and the other two are skipped.',
+    category: 'Business',
+    accent: '#475569',
+    glyph: '🔀',
+    make: makeBranchingRequest,
   },
   {
     id: 'form-confidential-tip',

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import type { ChartSpec } from '../../shared/types'
-import { Modal, Segmented, Button } from '../../shared/ui'
+import { Modal, Button } from '../../shared/ui'
 import ChartRender from './ChartRender'
 import type { ChartData } from './chartData'
 
@@ -11,6 +11,18 @@ export interface ChartFormValue {
   dataRanges: string
   seriesNames: string
 }
+
+const TYPES: { value: ChartSpec['type']; label: string; hint: string }[] = [
+  { value: 'column', label: 'Column', hint: 'Vertical bars, one group per category' },
+  { value: 'stackedColumn', label: 'Stacked column', hint: 'Series stacked into one bar per category' },
+  { value: 'stackedBar', label: 'Stacked bar', hint: 'Stacked, drawn horizontally — good for long labels' },
+  { value: 'line', label: 'Line', hint: 'Values connected across categories' },
+  { value: 'area', label: 'Area', hint: 'Line with the space below it filled' },
+  { value: 'combo', label: 'Combo', hint: 'Columns with the last series drawn as a line' },
+  { value: 'scatter', label: 'Scatter', hint: 'First range is x, the rest are y' },
+  { value: 'pie', label: 'Pie', hint: 'First series only, as shares of the total' },
+  { value: 'donut', label: 'Donut', hint: 'Pie with the total in the middle' },
+]
 
 export default function ChartModal({
   initial,
@@ -25,25 +37,31 @@ export default function ChartModal({
   isEdit: boolean
   preview: (v: ChartFormValue) => ChartData
 }) {
-  const [form, setForm] = useState<ChartFormValue>(initial)
+  // 'bar' predates the split into bar/column and has always drawn vertical
+  // columns, so it maps onto 'column' — same geometry, current name.
+  const [form, setForm] = useState<ChartFormValue>(() => ({ ...initial, type: initial.type === 'bar' ? 'column' : initial.type }))
   const previewData = useMemo(() => preview(form), [form, preview])
+  const current = TYPES.find((t) => t.value === form.type)
 
   const set = <K extends keyof ChartFormValue>(k: K, v: ChartFormValue[K]) => setForm((f) => ({ ...f, [k]: v }))
 
   return (
-    <Modal title={isEdit ? 'Edit chart' : 'Insert chart'} onClose={onCancel} width={480}>
+    <Modal title={isEdit ? 'Edit chart' : 'Insert chart'} onClose={onCancel} width={520}>
       <div className="sx-chartmodal-row">
         <span className="sx-chartmodal-label">Chart type</span>
-        <Segmented
-          value={form.type}
-          onChange={(v) => set('type', v as ChartSpec['type'])}
-          options={[
-            { value: 'bar', label: 'Bar' },
-            { value: 'line', label: 'Line' },
-            { value: 'area', label: 'Area' },
-            { value: 'pie', label: 'Pie' },
-          ]}
-        />
+        <div className="sx-charttype-grid">
+          {TYPES.map((t) => (
+            <button
+              key={t.value}
+              className={'sx-charttype' + (t.value === form.type ? ' on' : '')}
+              title={t.hint}
+              onClick={() => set('type', t.value)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {current && <span className="sx-chartmodal-hint">{current.hint}</span>}
       </div>
 
       <div className="sx-chartmodal-row">
@@ -77,30 +95,15 @@ export default function ChartModal({
         />
       </div>
 
-      <div
-        style={{
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-m)',
-          background: 'var(--canvas)',
-          height: 180,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 16,
-        }}
-      >
-        <ChartRender type={form.type} title={form.title} data={previewData} width={420} height={172} />
+      <div className="sx-chart-preview">
+        <ChartRender spec={{ type: form.type, title: form.title }} data={previewData} width={452} height={196} />
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button
-          variant="primary"
-          onClick={() => onSubmit(form)}
-          disabled={form.dataRanges.trim() === ''}
-        >
+        <Button variant="primary" onClick={() => onSubmit(form)} disabled={form.dataRanges.trim() === ''}>
           {isEdit ? 'Save chart' : 'Insert chart'}
         </Button>
       </div>

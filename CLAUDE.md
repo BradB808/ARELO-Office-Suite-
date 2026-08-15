@@ -114,6 +114,7 @@ npm run dev                                  # then open the browser suites:
 | Suite | Where |
 |---|---|
 | Formula engine | `src/apps/sheets/engine/formula.test.ts` |
+| Chart geometry, both renderers | `src/apps/sheets/chart.test.ts` |
 | Document conversion | `src/apps/docs/convert/convert.test.ts` |
 | Shared contracts | `src/shared/shared.test.ts` |
 | Forms model + responses | `src/apps/forms/forms.test.ts` |
@@ -121,12 +122,20 @@ npm run dev                                  # then open the browser suites:
 | Security layer (needs Electron) | `scripts/security-check.cjs` |
 | Forms round trip (needs Electron) | `npm run test:forms-e2e` |
 | Forms UI (needs Electron) | `npm run test:ui` |
+| Charts on screen (needs Electron) | `npm run test:charts` |
 | Colour contrast, all apps + themes | `npm run test:contrast` |
 
 `test:forms-e2e` is the one that matters most for Forms: it writes the exported
 HTML to disk, loads it in a real BrowserWindow with a request filter attached,
 fills every control, submits, and feeds the code the page produced back through
 the app's own decoder. It fails if the page attempts a single network request.
+
+`test:charts` is the one that matters most for Sheets charts: the layout has no
+DOM to measure text with, so it estimates from the characters — and every
+reserve that keeps a label on the frame is computed from that estimate. The
+suite opens a shipped template in the real app and compares `getBBox()` against
+the estimate the chart was laid out with. That is how the estimate was caught
+running 16% short for digits, which no unit test could have seen.
 
 `test:contrast` reads computed styles from the running app in both themes. Two
 traps it took a while to get right, worth knowing before you trust its output:
@@ -153,6 +162,24 @@ Two gotchas when driving the app that way:
   it, then take the real one.
 - `requestAnimationFrame` does not fire when the window is occluded. Awaiting it
   hangs forever. Use plain timeouts.
+
+## Charts
+
+There are two chart renderers — `ChartRender.tsx` draws into the app, `chartSvg.ts`
+produces the SVG that goes into exports. They used to duplicate all the maths and
+could silently disagree. **All geometry now lives in `chartGeom.ts`**, which turns a
+spec plus data into a flat list of drawing primitives; both renderers only serialise
+that list. Put new chart maths there, never in a renderer.
+
+Colour is the one thing `chartGeom` cannot decide, because the app paints against
+`--text`/`--border`/`--surface` and an exported page against `--ink`/`--muted`/`--line`.
+A node's fill is therefore either a literal series colour or a role name each renderer
+resolves through its own palette.
+
+**`bar` means vertical columns.** Excel's convention is bar = horizontal, and the newer
+types follow it, but this app has always drawn `bar` vertically and it is baked into
+shipped templates and every saved document. Its meaning is pinned; use `column` for new
+charts and `stackedBar` for the horizontal one.
 
 ## Build
 

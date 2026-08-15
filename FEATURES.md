@@ -16,7 +16,8 @@ triaged for a free, offline, single-user suite. ✅ shipped · 🕐 later · ✖
 | Statistics: PERCENTILE, QUARTILE, CORREL, SLOPE, FORECAST… | ✅ |
 | Date power tools: EDATE, EOMONTH, WORKDAY, NETWORKDAYS, DATEDIF | ✅ |
 | Number formats (currency, %, date, decimals) | ✅ |
-| Charts (bar/line/pie/area) | ✅ |
+| Charts (10 types: bar, column, stacked, line, area, pie, donut, scatter, combo) | ✅ |
+| Chart legends, axis titles, data labels, gridlines | ✅ |
 | **Merged cells** | ✅ |
 | **Freeze panes** | ✅ |
 | **Hide/unhide rows & columns** | ✅ |
@@ -25,7 +26,7 @@ triaged for a free, offline, single-user suite. ✅ shipped · 🕐 later · ✖
 | **Column filters** | ✅ |
 | **Data validation (dropdown lists)** | ✅ |
 | Sort, fill handle, multi-sheet, xlsx/csv both ways | ✅ |
-| Pivot tables | 🕐 |
+| **Pivot tables** (nested rows/cols, 6 aggregations, grand totals) | ✅ |
 | Named ranges, array formulas | 🕐 |
 | Macros/VBA, Power Query, external data | ✖ (offline/free scope) |
 | Real-time collaboration | ✖ (no servers by design) |
@@ -86,11 +87,12 @@ form travels as a file, and so do the answers. Nobody in the middle sees them.
 | Export responses to CSV | ✅ |
 | **Send responses straight into Anleo Sheets** | ✅ |
 | Printable paper version (PDF) | ✅ |
-| Form templates | ✅ (10) |
+| Form templates | ✅ (12) |
 | Response validation (required, email, number range) | ✅ |
+| **Quiz mode with automatic marking** (in the respondent's own browser) | ✅ |
 | Automatic collection from a public link | ✖ (needs a server — that is the trade) |
 | Live response notifications | ✖ (no servers by design) |
-| Branching / conditional questions | 🕐 |
+| **Branching / conditional questions** | ✅ |
 | File upload questions | 🕐 |
 
 ### Why the file round trip is a feature, not a workaround

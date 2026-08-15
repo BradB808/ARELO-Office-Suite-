@@ -50,9 +50,21 @@ export interface Cell {
   style?: CellStyle
 }
 
+export type ChartType =
+  | 'bar'
+  | 'column'
+  | 'stackedBar'
+  | 'stackedColumn'
+  | 'line'
+  | 'area'
+  | 'pie'
+  | 'donut'
+  | 'scatter'
+  | 'combo'
+
 export interface ChartSpec {
   id: string
-  type: 'bar' | 'line' | 'pie' | 'area'
+  type: ChartType
   title: string
   /** e.g. "A2:A10" — category labels */
   labelRange?: string
@@ -63,7 +75,36 @@ export interface ChartSpec {
   y: number
   w: number
   h: number
+  legend?: 'none' | 'right' | 'bottom'
+  xTitle?: string
+  yTitle?: string
+  /** Print each point's value beside it. */
+  dataLabels?: boolean
+  gridlines?: boolean
+  /** combo only: indexes of dataRanges drawn as lines; the rest are columns. */
+  lineSeries?: number[]
 }
+
+/**
+ * A pivot table: group the source range by row and column fields, aggregate
+ * the value fields, and write the result into the sheet starting at `anchor`.
+ * Recomputed on demand rather than kept live, so the output is ordinary cells
+ * a user can format, sort and export like any other.
+ */
+export interface PivotSpec {
+  id: string
+  /** e.g. "A1:F200"; the first row is treated as headers. */
+  source: string
+  /** Column offsets within `source`. */
+  rows: number[]
+  cols: number[]
+  values: { col: number; agg: PivotAgg; label?: string }[]
+  /** Top-left cell of the generated block, e.g. "H1". */
+  anchor: string
+  showTotals?: boolean
+}
+
+export type PivotAgg = 'sum' | 'count' | 'average' | 'min' | 'max' | 'countUnique'
 
 /** Conditional formatting rule applied to a range. */
 export interface CondRule {
@@ -112,6 +153,7 @@ export interface Sheet {
   condFormats?: CondRule[]
   validations?: Validation[]
   filter?: SheetFilter
+  pivots?: PivotSpec[]
 }
 
 export interface SheetsContent {
@@ -304,6 +346,25 @@ export interface FormQuestion {
   placeholder?: string
   /** paragraph */
   rows?: number
+
+  // ---- quiz mode ----
+  /** Marks worth when settings.quizMode is on. */
+  points?: number
+  /**
+   * The accepted answer(s). Option ids for choice/checkboxes/dropdown; literal
+   * text (compared case-insensitively, trimmed) for short/number/date/time.
+   */
+  correct?: string[]
+  /** Shown after grading, whether they got it right or wrong. */
+  feedback?: string
+
+  // ---- branching ----
+  /**
+   * Routes the respondent onward based on which option they picked. `goTo` is
+   * the id of a 'section' question, or 'end' to finish the form early. Only
+   * meaningful on choice and dropdown questions.
+   */
+  branches?: { optionId: string; goTo: string }[]
 }
 
 export interface FormTheme {
@@ -319,6 +380,8 @@ export interface FormResponse {
   id: string
   submittedAt: number
   answers: Record<string, string | string[]>
+  /** Present only for quiz forms: marks scored and marks available. */
+  score?: { earned: number; total: number }
 }
 
 export interface FormsContent {
@@ -334,6 +397,15 @@ export interface FormsContent {
     showQuestionNumbers?: boolean
     /** Show a progress bar as they fill it in. */
     showProgress?: boolean
+    /**
+     * Turns the form into a quiz: questions carry marks and an answer key, and
+     * the exported page grades itself. Grading happens in the respondent's own
+     * browser — the key travels inside the file, so this suits classroom and
+     * practice use, not invigilated exams.
+     */
+    quizMode?: boolean
+    /** Show the respondent their score straight after submitting. */
+    showScore?: boolean
   }
 }
 

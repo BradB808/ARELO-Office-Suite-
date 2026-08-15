@@ -16,6 +16,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const SUITES = [
   'src/apps/sheets/engine/formula.test.ts',
+  'src/apps/sheets/pivot.test.ts',
+  'src/apps/sheets/chart.test.ts',
   'src/apps/docs/convert/convert.test.ts',
   'src/shared/shared.test.ts',
   'src/apps/forms/forms.test.ts',

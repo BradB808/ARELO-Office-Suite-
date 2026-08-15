@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import type { EditorAppProps, SheetsContent, Sheet, Cell, CellStyle, ChartSpec, CondRule, SheetFilter, Validation } from '../../shared/types'
+import type { EditorAppProps, SheetsContent, Sheet, Cell, CellStyle, ChartSpec, CondRule, PivotSpec, SheetFilter, Validation } from '../../shared/types'
 import { uid } from '../../shared/types'
 import { platform } from '../../shared/platform'
 import { registerExporters } from '../../shared/exporters'
@@ -41,6 +41,21 @@ import {
   blankSheet,
 } from './export'
 import { guessChartSpecFromSelection } from './chartData'
+import {
+  anchorValid,
+  buildPivot,
+  parseSourceRef,
+  pivotColWidths,
+  pivotConflicts,
+  pivotPatch,
+  qualifySource,
+  readSource,
+  refreshConflicts,
+  suggestAnchor,
+  suggestFields,
+  type SourceTable,
+} from './pivot'
+import PivotModal, { type PivotFormValue } from './PivotModal'
 import type { ChartFormValue } from './ChartModal'
 import Toolbar, { type BorderKind, type AutosumOp, type PaintMode } from './Toolbar'
 import { tablePatchFor, removeTableStylePatch } from './tableStyle'
@@ -124,6 +139,7 @@ export default function SheetsApp({ doc, onDocChange, requestSave }: EditorAppPr
   const [sizeOverrides, setSizeOverrides] = useState<Record<number, { rows: number; cols: number }>>({})
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; target: ContextMenuTarget } | null>(null)
   const [chartModal, setChartModal] = useState<{ mode: 'new' | 'edit'; chart?: ChartSpec } | null>(null)
+  const [pivotOpen, setPivotOpen] = useState(false)
   const [importPending, setImportPending] = useState<{ kind: 'xlsx' | 'csv'; run: () => void } | null>(null)
   const [findOpen, setFindOpen] = useState(false)
   const [condFormatOpen, setCondFormatOpen] = useState(false)
@@ -171,6 +187,7 @@ export default function SheetsApp({ doc, onDocChange, requestSave }: EditorAppPr
       setEditing(null)
       setCtxMenu(null)
       setChartModal(null)
+      setPivotOpen(false)
       setCondFormatOpen(false)
       setValidationOpen(false)
       setAiModalOpen(false)
@@ -217,6 +234,20 @@ export default function SheetsApp({ doc, onDocChange, requestSave }: EditorAppPr
         group: 'Sheets',
         keywords: 'freeze row column',
         run: () => setFreeze(sheet.freeze && (sheet.freeze.rows || sheet.freeze.cols) ? undefined : { rows: 1, cols: 0 }),
+      },
+      {
+        id: 'sheets.pivotTable',
+        title: 'Pivot table',
+        group: 'Sheets',
+        keywords: 'summarise summarize group aggregate crosstab',
+        run: () => setPivotOpen(true),
+      },
+      {
+        id: 'sheets.refreshPivots',
+        title: 'Refresh pivot tables',
+        group: 'Sheets',
+        keywords: 'pivot recompute update',
+        run: () => refreshPivots(),
       },
       { id: 'sheets.condFormat', title: 'Conditional formatting', group: 'Sheets', run: () => setCondFormatOpen(true) },
       { id: 'sheets.createFilter', title: 'Create filter', group: 'Sheets', run: () => toggleFilter() },
@@ -1266,6 +1297,168 @@ export default function SheetsApp({ doc, onDocChange, requestSave }: EditorAppPr
     commitSheetUpdate({ ...sheet, charts: (sheet.charts ?? []).filter((c) => c.id !== id) })
   }
 
+  // ---------------- pivot tables ----------------
+
+  /** Resolves a (possibly sheet-qualified) source range against the workbook. */
+  function readPivotTable(source: string): SourceTable | null {
+    const ref = parseSourceRef(source)
+    if (!ref) return null
+    const cur = contentRef.current
+    const src = ref.sheetName ? cur.sheets.find((s) => s.name === ref.sheetName) : sheet
+    if (!src) return null
+    return readSource(src, src === sheet ? computed : computeSheet(src), ref)
+  }
+
+  function specFromForm(v: PivotFormValue, id: string): PivotSpec {
+    // A pivot on its own sheet has to record which sheet the data is on — but
+    // only if the user hasn't already said, or qualifying it twice names a
+    // sheet ("Data!Q1!A1:C9") that does not exist.
+    const source = v.source.trim()
+    const qualify = v.newSheet && !parseSourceRef(source)?.sheetName
+    return {
+      id,
+      source: qualify ? qualifySource(sheet.name, source) : source,
+      rows: v.rows,
+      cols: v.cols,
+      values: v.values,
+      anchor: v.newSheet ? 'A1' : v.anchor.trim(),
+      showTotals: v.showTotals,
+    }
+  }
+
+  function pivotFormInitial(): PivotFormValue {
+    // A single cell says nothing about what to summarise, so fall back to
+    // everything the sheet has in it.
+    const { maxRow: mr, maxCol: mc } = usedRange(sheet)
+    const source =
+      sel.r0 === sel.r1 && sel.c0 === sel.c1 && mr >= 0
+        ? `A1:${refToString(mc, mr)}`
+        : mergeRangeStr(sel)
+    const ref = parseSourceRef(source)
+    const table = ref ? readPivotTable(source) : null
+    const guess = table ? suggestFields(table) : { rows: [], values: [] }
+    return {
+      source,
+      rows: guess.rows,
+      cols: [],
+      values: guess.values,
+      anchor: ref ? suggestAnchor(ref) : 'A1',
+      showTotals: true,
+      newSheet: false,
+    }
+  }
+
+  function pivotConflictsFor(v: PivotFormValue): string[] {
+    const table = readPivotTable(v.source)
+    if (!table) return []
+    const spec = specFromForm({ ...v, newSheet: false }, 'preview')
+    return pivotConflicts(sheet, spec, buildPivot(table, spec))
+  }
+
+  function applyPatchTo(cells: Record<string, Cell>, patch: Record<string, Cell | null>): Record<string, Cell> {
+    const next = { ...cells }
+    for (const [ref, cell] of Object.entries(patch)) {
+      if (cell === null) delete next[ref]
+      else next[ref] = cell
+    }
+    return next
+  }
+
+  function pivotSheetName(existing: string[]): string {
+    let n = 1
+    while (existing.includes(`Pivot ${n}`)) n++
+    return `Pivot ${n}`
+  }
+
+  function submitPivot(v: PivotFormValue) {
+    const spec = specFromForm(v, uid())
+    const table = readPivotTable(spec.source)
+    if (!table) {
+      showToast('That source range is not valid.')
+      return
+    }
+    // Without a real anchor every write lands nowhere, and the pivot would
+    // report success having put nothing in the sheet.
+    if (!anchorValid(spec.anchor)) {
+      showToast('That is not a cell to start the pivot at — try something like H1.')
+      return
+    }
+    const build = buildPivot(table, spec)
+    if (build.error) {
+      showToast(build.error)
+      return
+    }
+    if (v.newSheet) {
+      const cur = contentRef.current
+      const target = blankSheet(pivotSheetName(cur.sheets.map((s) => s.name)))
+      const placed: Sheet = {
+        ...target,
+        cells: applyPatchTo(target.cells, pivotPatch(target, spec, build)),
+        colWidths: pivotColWidths(target, spec, build),
+        pivots: [spec],
+      }
+      commitContent({ sheets: [...cur.sheets, placed], active: cur.sheets.length })
+      setSel({ r0: 0, c0: 0, r1: 0, c1: 0 })
+      setActiveState({ row: 0, col: 0 })
+    } else {
+      const conflicts = pivotConflicts(sheet, spec, build)
+      if (conflicts.length > 0) {
+        showToast(`A pivot there would write over ${conflicts[0]} — pick another spot or a new sheet.`)
+        return
+      }
+      commitSheetUpdate({
+        ...sheet,
+        cells: applyPatchTo(sheet.cells, pivotPatch(sheet, spec, build)),
+        colWidths: pivotColWidths(sheet, spec, build),
+        pivots: [...(sheet.pivots ?? []), spec],
+      })
+    }
+    setPivotOpen(false)
+    showToast('Pivot table created. Use Data → Refresh when the source data changes.')
+  }
+
+  /** Rebuilds every pivot in the workbook in place — the source data has moved
+   *  on, but the block is ordinary cells and cannot notice on its own. */
+  function refreshPivots() {
+    const cur = contentRef.current
+    let done = 0
+    let blockedBy: string | null = null
+    const sheets = cur.sheets.map((s) => {
+      if (!s.pivots?.length) return s
+      let cells = s.cells
+      let colWidths = s.colWidths
+      for (const spec of s.pivots) {
+        const ref = parseSourceRef(spec.source)
+        if (!ref) continue
+        const src = ref.sheetName ? cur.sheets.find((x) => x.name === ref.sheetName) : s
+        if (!src) continue
+        const build = buildPivot(readSource(src, computeSheet(src), ref), spec)
+        if (build.error) continue
+        // The pivot has grown into cells that were never its own — better to
+        // leave it stale than to eat whatever the user put beside it.
+        const inTheWay = refreshConflicts({ ...s, cells }, spec, build)
+        if (inTheWay.length > 0) {
+          blockedBy = inTheWay[0]
+          continue
+        }
+        cells = applyPatchTo(cells, pivotPatch({ ...s, cells }, spec, build))
+        colWidths = pivotColWidths({ ...s, colWidths }, spec, build)
+        done++
+      }
+      return cells === s.cells ? s : { ...s, cells, colWidths }
+    })
+    if (done === 0) {
+      showToast(
+        blockedBy
+          ? `That pivot has more rows now and ${blockedBy} is in the way. Clear it, or rebuild the pivot somewhere roomier.`
+          : 'No pivot tables to refresh yet.',
+      )
+      return
+    }
+    commitContent({ ...cur, sheets })
+    showToast(done === 1 ? 'Pivot table refreshed.' : `${done} pivot tables refreshed.`)
+  }
+
   // ---------------- export / import ----------------
 
   async function handleExport(kind: 'asheet' | 'xlsx' | 'csv' | 'living') {
@@ -1508,6 +1701,8 @@ export default function SheetsApp({ doc, onDocChange, requestSave }: EditorAppPr
         filterActive={!!sheet.filter}
         onToggleFilter={toggleFilter}
         onOpenValidation={() => setValidationOpen(true)}
+        onOpenPivot={() => setPivotOpen(true)}
+        onRefreshPivots={refreshPivots}
         paintMode={paintMode}
         onPaintOnce={armPaintOnce}
         onPaintSticky={armPaintSticky}
@@ -1612,6 +1807,16 @@ export default function SheetsApp({ doc, onDocChange, requestSave }: EditorAppPr
             const seriesNames = v.seriesNames.split(',').map((s) => s.trim())
             return extractChartDataSafe(computed, { labelRange: v.labelRange || undefined, dataRanges, seriesNames })
           }}
+        />
+      )}
+
+      {pivotOpen && (
+        <PivotModal
+          initial={pivotFormInitial()}
+          readTable={(source) => readPivotTable(source)}
+          conflictsFor={pivotConflictsFor}
+          onCancel={() => setPivotOpen(false)}
+          onSubmit={submitPivot}
         />
       )}
 

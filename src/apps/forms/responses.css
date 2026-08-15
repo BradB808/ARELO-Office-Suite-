@@ -163,6 +163,7 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .fm-resp-num {
   flex: none;
@@ -172,6 +173,9 @@
   font-variant-numeric: tabular-nums;
 }
 .fm-resp-qtitle {
+  /* Takes the row so a chart switch sits at the far right, and wraps under the
+     title rather than squeezing it when the question is a long one. */
+  flex: 1 1 200px;
   margin: 0;
   font-size: 14px;
   font-weight: 600;
@@ -231,6 +235,112 @@
 .fm-resp-bar-n .fm-resp-pct {
   color: var(--text-3);
   margin-left: 6px;
+}
+
+/* ---------- pie and donut ---------- */
+
+.fm-resp-chart {
+  margin-top: 13px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.fm-resp-pie {
+  width: 132px;
+  height: 132px;
+  flex: none;
+}
+/* A hairline of the card colour between slices: the ramp puts neighbouring
+   slices close together, and without a gap two of them read as one. */
+.fm-resp-slice {
+  stroke: var(--surface);
+  stroke-width: 1.5;
+}
+.fm-resp-hole {
+  fill: var(--surface);
+}
+.fm-resp-pie-n {
+  fill: var(--text);
+  font-size: 20px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.fm-resp-legend {
+  flex: 1;
+  min-width: 180px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fm-resp-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.fm-resp-swatch {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+}
+.fm-resp-legend-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fm-resp-legend-n {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fm-resp-legend-n .fm-resp-pct {
+  color: var(--text-3);
+  margin-left: 6px;
+}
+
+/* ---------- quiz marks ---------- */
+
+.fm-score-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 13px;
+}
+.fm-score-figure {
+  flex: 1 1 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  background: var(--surface-2);
+}
+.fm-score-figure span {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-3);
+}
+.fm-score-figure strong {
+  font-size: 19px;
+  font-weight: 650;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.fm-resp-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .fm-resp-texts {

@@ -12,7 +12,19 @@ import { registerCommands, clearCommands } from '../../shared/commands'
 import { SYSTEM_FONTS, cssFamily } from '../../shared/fonts'
 import { Button, IconBtn, MenuButton, Modal, Select, Spacer, ToolbarDivider, type MenuItem } from '../../shared/ui'
 import { IcCheck, IcExport, IcPlus, IcSettings, IcTrash } from '../../shared/icons'
-import { FORM_THEMES, QUESTION_KINDS, isAnswerable, newQuestion, questionNumbers } from './model'
+import {
+  BRANCH_END,
+  FORM_THEMES,
+  QUESTION_KINDS,
+  branchProblems,
+  hasAnswerKey,
+  isAnswerable,
+  newQuestion,
+  questionMarks,
+  questionNumbers,
+  quizTotal,
+  sectionsAfter,
+} from './model'
 import { responsesToCsv } from './responses'
 import { renderFillableForm, renderPrintableForm } from './render'
 import { ResponsesPanel } from './ResponsesPanel'
@@ -23,6 +35,12 @@ const CSV_FILTERS = [{ name: 'Comma-separated values', extensions: ['csv'] }]
 
 /** Kinds that carry a list of answers the author writes. */
 const OPTION_KINDS: QuestionKind[] = ['choice', 'checkboxes', 'dropdown']
+
+/** Kinds that can route the respondent onward: one answer, chosen from a list. */
+const BRANCHING_KINDS: QuestionKind[] = ['choice', 'dropdown']
+
+/** Kinds whose answer key is text the author types rather than an option they tick. */
+const TYPED_KEY_KINDS: QuestionKind[] = ['short', 'number', 'date', 'time']
 
 // ---------- small local icons ----------
 
@@ -98,11 +116,72 @@ function kindLabel(kind: QuestionKind): string {
   return QUESTION_KINDS.find((k) => k.kind === kind)?.label ?? kind
 }
 
+/**
+ * A deleted option must not linger in the answer key or the routing, where it
+ * would mark and route an answer nobody can give any more. Only runs when the
+ * option list itself changed — on those questions the key holds option ids, so
+ * there is nothing else in it to lose.
+ */
+function withPrunedOptionRefs(q: FormQuestion, patch: Partial<FormQuestion>): FormQuestion {
+  if (!patch.options) return q
+  const ids = new Set(patch.options.map((o) => o.id))
+  return {
+    ...q,
+    correct: q.correct?.filter((c) => ids.has(c)),
+    branches: q.branches?.filter((b) => ids.has(b.optionId)),
+  }
+}
+
 // ---------- option list editor ----------
 
-function OptionsEditor({ q, onChange }: { q: FormQuestion; onChange: (options: FormOption[]) => void }) {
+/**
+ * Where an option may send the respondent. Only sections *after* this question
+ * are offered — a branch that jumps backwards can walk someone round the same
+ * pages forever, so the editor does not hand out the rope. One that already
+ * exists (a question moved below the section it routes to, or a section since
+ * deleted) is still listed, named for what it is, so it can be seen and changed.
+ */
+function branchOptions(
+  all: FormQuestion[],
+  q: FormQuestion,
+  current: string | undefined,
+): { value: string; label: string }[] {
+  const out = [
+    { value: '', label: 'Continue to the next section' },
+    ...sectionsAfter(all, q.id).map((s) => ({ value: s.id, label: s.title.trim() || 'Untitled section' })),
+    { value: BRANCH_END, label: 'Submit the form' },
+  ]
+  if (current && !out.some((o) => o.value === current)) {
+    const earlier = all.find((x) => x.id === current && x.kind === 'section')
+    out.splice(1, 0, {
+      value: current,
+      label: earlier
+        ? `${earlier.title.trim() || 'Untitled section'} — jumps backwards`
+        : 'A section that no longer exists',
+    })
+  }
+  return out
+}
+
+function OptionsEditor({
+  q,
+  all,
+  quiz,
+  branching,
+  onChange,
+  onPatch,
+}: {
+  q: FormQuestion
+  all: FormQuestion[]
+  quiz: boolean
+  branching: boolean
+  onChange: (options: FormOption[]) => void
+  onPatch: (patch: Partial<FormQuestion>) => void
+}) {
   const options = q.options ?? []
   const markClass = q.kind === 'choice' ? 'round' : q.kind === 'checkboxes' ? 'square' : 'num'
+  const correct = q.correct ?? []
+  const branches = q.branches ?? []
 
   function patch(i: number, label: string) {
     onChange(options.map((o, n) => (n === i ? { ...o, label } : o)))
@@ -116,32 +195,76 @@ function OptionsEditor({ q, onChange }: { q: FormQuestion; onChange: (options: F
     onChange(arr)
   }
 
+  function toggleCorrect(id: string) {
+    // One right answer for a radio or a dropdown, any number for checkboxes.
+    if (q.kind !== 'checkboxes') {
+      onPatch({ correct: correct.includes(id) ? [] : [id] })
+      return
+    }
+    onPatch({ correct: correct.includes(id) ? correct.filter((c) => c !== id) : [...correct, id] })
+  }
+
+  function setBranch(id: string, goTo: string) {
+    const rest = branches.filter((b) => b.optionId !== id)
+    onPatch({ branches: goTo === '' ? rest : [...rest, { optionId: id, goTo }] })
+  }
+
   return (
     <div className="fm-opts">
-      {options.map((o, i) => (
-        <div key={o.id} className="fm-opt">
-          <span className={'fm-opt-mark ' + markClass}>{markClass === 'num' ? i + 1 : ''}</span>
-          <input
-            className="fm-input fm-grow"
-            value={o.label}
-            placeholder={`Option ${i + 1}`}
-            onChange={(e) => patch(i, e.target.value)}
-          />
-          <IconBtn label="Move option up" disabled={i === 0} onClick={() => move(i, -1)}>
-            <IcUp />
-          </IconBtn>
-          <IconBtn label="Move option down" disabled={i === options.length - 1} onClick={() => move(i, 1)}>
-            <IcDown />
-          </IconBtn>
-          <IconBtn
-            label="Remove option"
-            disabled={options.length <= 1}
-            onClick={() => onChange(options.filter((_, n) => n !== i))}
-          >
-            <IcTrash />
-          </IconBtn>
-        </div>
-      ))}
+      {options.map((o, i) => {
+        const goTo = branches.find((b) => b.optionId === o.id)?.goTo ?? ''
+        return (
+          <div key={o.id} className="fm-optgroup">
+            <div className="fm-opt">
+              {quiz && (
+                <button
+                  className={'fm-key' + (correct.includes(o.id) ? ' on' : '')}
+                  title={correct.includes(o.id) ? 'This is a correct answer' : 'Mark as a correct answer'}
+                  aria-pressed={correct.includes(o.id)}
+                  onClick={() => toggleCorrect(o.id)}
+                >
+                  <IcCheck />
+                </button>
+              )}
+              <span className={'fm-opt-mark ' + markClass}>{markClass === 'num' ? i + 1 : ''}</span>
+              <input
+                className="fm-input fm-grow"
+                value={o.label}
+                placeholder={`Option ${i + 1}`}
+                onChange={(e) => patch(i, e.target.value)}
+              />
+              <IconBtn label="Move option up" disabled={i === 0} onClick={() => move(i, -1)}>
+                <IcUp />
+              </IconBtn>
+              <IconBtn label="Move option down" disabled={i === options.length - 1} onClick={() => move(i, 1)}>
+                <IcDown />
+              </IconBtn>
+              <IconBtn
+                label="Remove option"
+                disabled={options.length <= 1}
+                onClick={() => onChange(options.filter((_, n) => n !== i))}
+              >
+                <IcTrash />
+              </IconBtn>
+            </div>
+            {branching && (
+              <div className="fm-branch">
+                <span className="fm-branch-arrow" aria-hidden="true">
+                  ↳
+                </span>
+                <span>then go to</span>
+                <Select
+                  value={goTo}
+                  width={230}
+                  compact
+                  onChange={(v) => setBranch(o.id, v)}
+                  options={branchOptions(all, q, goTo)}
+                />
+              </div>
+            )}
+          </div>
+        )
+      })}
 
       {q.otherOption && (
         <div className="fm-opt">
@@ -161,16 +284,52 @@ function OptionsEditor({ q, onChange }: { q: FormQuestion; onChange: (options: F
 
 // ---------- kind-specific settings ----------
 
-function KindSettings({ q, onPatch }: { q: FormQuestion; onPatch: (patch: Partial<FormQuestion>) => void }) {
+function KindSettings({
+  q,
+  all,
+  quiz,
+  onPatch,
+}: {
+  q: FormQuestion
+  all: FormQuestion[]
+  quiz: boolean
+  onPatch: (patch: Partial<FormQuestion>) => void
+}) {
+  // Held here rather than in the document: an author who opens the routing rows
+  // and picks nothing has expressed no routing, and should not have an empty
+  // branch list saved on their behalf.
+  const [branchOpen, setBranchOpen] = useState(false)
+
   if (OPTION_KINDS.includes(q.kind)) {
+    // Routing needs somewhere to route to, so the toggle only appears once a
+    // section exists further down the form.
+    const canBranch = BRANCHING_KINDS.includes(q.kind) && sectionsAfter(all, q.id).length > 0
+    const routed = (q.branches ?? []).length > 0
     return (
       <>
-        <OptionsEditor q={q} onChange={(options) => onPatch({ options })} />
+        <OptionsEditor
+          q={q}
+          all={all}
+          quiz={quiz}
+          branching={canBranch && (branchOpen || routed)}
+          onChange={(options) => onPatch({ options })}
+          onPatch={onPatch}
+        />
         {q.kind !== 'dropdown' && (
           <Toggle
             checked={!!q.otherOption}
             label="Offer an “Other” box"
             onChange={(v) => onPatch({ otherOption: v })}
+          />
+        )}
+        {canBranch && (
+          <Toggle
+            checked={branchOpen || routed}
+            label="Send them to a section based on their answer"
+            onChange={(v) => {
+              setBranchOpen(v)
+              if (!v) onPatch({ branches: [] })
+            }}
           />
         )}
       </>
@@ -296,6 +455,98 @@ function KindSettings({ q, onPatch }: { q: FormQuestion; onPatch: (patch: Partia
   return null
 }
 
+// ---------- marking ----------
+
+/** The accepted answers for a question whose key is typed, not ticked. Several
+ *  rows because "17", "seventeen" and "Seventeen" are all the same answer to a
+ *  person, and the marker compares trimmed and case-insensitively. */
+function AnswerKeyEditor({ q, onPatch }: { q: FormQuestion; onPatch: (patch: Partial<FormQuestion>) => void }) {
+  const answers = q.correct ?? []
+  const rows = answers.length ? answers : ['']
+
+  // Blank rows are left in the list rather than filtered on every keystroke —
+  // dropping one mid-typing shifts every row below it under the cursor. Every
+  // reader of the key ignores blanks, so an empty row means nothing to anyone.
+  function set(i: number, value: string) {
+    onPatch({ correct: rows.map((a, n) => (n === i ? value : a)) })
+  }
+
+  return (
+    <div className="fm-keylist">
+      {rows.map((a, i) => (
+        <div className="fm-keyrow" key={i}>
+          <span className="fm-key on" aria-hidden="true">
+            <IcCheck />
+          </span>
+          <input
+            className="fm-input fm-grow"
+            value={a}
+            placeholder={i === 0 ? 'The answer you will accept' : 'Another wording you will accept'}
+            onChange={(e) => set(i, e.target.value)}
+          />
+          <IconBtn
+            label="Remove this accepted answer"
+            disabled={rows.length <= 1}
+            onClick={() => onPatch({ correct: rows.filter((_, n) => n !== i) })}
+          >
+            <IcTrash />
+          </IconBtn>
+        </div>
+      ))}
+      <Button small onClick={() => onPatch({ correct: [...rows, ''] })}>
+        <IcPlus /> Accept another answer
+      </Button>
+    </div>
+  )
+}
+
+function QuizSettings({ q, onPatch }: { q: FormQuestion; onPatch: (patch: Partial<FormQuestion>) => void }) {
+  const keyed = hasAnswerKey(q)
+  return (
+    <div className="fm-quiz-block">
+      <div className="fm-card-label">Marking</div>
+      {TYPED_KEY_KINDS.includes(q.kind) ? (
+        <AnswerKeyEditor q={q} onPatch={onPatch} />
+      ) : OPTION_KINDS.includes(q.kind) ? (
+        <div className="fm-card-note">
+          {keyed
+            ? q.kind === 'checkboxes'
+              ? 'Ticked options above are the answer. Part marks are given, less one answer’s worth for each wrong tick.'
+              : 'The ticked option above is the answer.'
+            : 'Tick the correct option above to mark this question.'}
+        </div>
+      ) : (
+        <div className="fm-card-note">This kind of question is not marked — it counts for no marks.</div>
+      )}
+      {keyed && (
+        <div className="fm-fields">
+          <Field label="Marks">
+            <input
+              className="fm-input fm-num"
+              type="number"
+              min={0}
+              step={0.5}
+              value={q.points ?? 1}
+              onChange={(e) =>
+                onPatch({ points: e.target.value === '' ? undefined : Math.max(0, Number(e.target.value)) })
+              }
+            />
+          </Field>
+          <Field label="Feedback after marking">
+            <input
+              className="fm-input"
+              style={{ width: 340 }}
+              value={q.feedback ?? ''}
+              placeholder="Shown whether they got it right or wrong (optional)"
+              onChange={(e) => onPatch({ feedback: e.target.value })}
+            />
+          </Field>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ---------- question card ----------
 
 function QuestionCard({
@@ -310,6 +561,9 @@ function QuestionCard({
   onDuplicate,
   onDelete,
   onMove,
+  all,
+  quiz,
+  problems,
 }: {
   q: FormQuestion
   number: number | undefined
@@ -322,9 +576,13 @@ function QuestionCard({
   onDuplicate: () => void
   onDelete: () => void
   onMove: (dir: -1 | 1) => void
+  all: FormQuestion[]
+  quiz: boolean
+  problems: string[]
 }) {
   const section = q.kind === 'section'
   const cls = ['fm-qcard', selected ? 'selected' : '', section ? 'section' : ''].filter(Boolean).join(' ')
+  const routes = (q.branches ?? []).length
 
   return (
     <div className={cls} onClick={selected ? undefined : onSelect}>
@@ -356,10 +614,24 @@ function QuestionCard({
               <span>{kindLabel(q.kind)}</span>
               {OPTION_KINDS.includes(q.kind) && <span>· {(q.options ?? []).length} options</span>}
               {q.help?.trim() && <span>· has help text</span>}
+              {quiz && isAnswerable(q) && (
+                <span className={hasAnswerKey(q) ? 'fm-meta-key' : ''}>
+                  · {hasAnswerKey(q) ? `${questionMarks(q)} ${questionMarks(q) === 1 ? 'mark' : 'marks'}` : 'no answer key'}
+                </span>
+              )}
+              {routes > 0 && <span className="fm-meta-branch">· routes {routes === 1 ? '1 answer' : `${routes} answers`}</span>}
             </div>
           </div>
         )}
       </div>
+
+      {/* Shown whether or not the card is open: a branch that has quietly gone
+          wrong is exactly the thing an author would otherwise never look at. */}
+      {problems.map((p) => (
+        <div className="fm-qwarn" key={p}>
+          {p}
+        </div>
+      ))}
 
       {selected && (
         <>
@@ -370,7 +642,8 @@ function QuestionCard({
               placeholder={section ? 'Describe this part of the form (optional)' : 'Help text (optional)'}
               onChange={(e) => onPatch({ help: e.target.value })}
             />
-            <KindSettings q={q} onPatch={onPatch} />
+            <KindSettings q={q} all={all} quiz={quiz} onPatch={onPatch} />
+            {quiz && isAnswerable(q) && <QuizSettings q={q} onPatch={onPatch} />}
           </div>
 
           <div className="fm-qactions">
@@ -456,7 +729,7 @@ export default function FormsApp({ doc, onDocChange, onTitleChange }: EditorAppP
 
   function patchQuestion(id: string, patch: Partial<FormQuestion>) {
     const c = contentRef.current
-    commit({ ...c, questions: c.questions.map((q) => (q.id === id ? { ...q, ...patch } : q)) })
+    commit({ ...c, questions: c.questions.map((q) => (q.id === id ? withPrunedOptionRefs({ ...q, ...patch }, patch) : q)) })
   }
 
   function changeKind(id: string, kind: QuestionKind) {
@@ -477,6 +750,12 @@ export default function FormsApp({ doc, onDocChange, onTitleChange }: EditorAppP
           help: q.help,
           required: kind === 'section' ? undefined : q.required,
           options: keepOptions ? q.options : fresh.options,
+          // Marks and feedback survive any change of kind; the key and the
+          // routing only survive while the options they name still exist.
+          points: q.points,
+          feedback: q.feedback,
+          correct: keepOptions ? q.correct : undefined,
+          branches: keepOptions && BRANCHING_KINDS.includes(kind) ? q.branches : undefined,
         }
       }),
     })
@@ -498,10 +777,15 @@ export default function FormsApp({ doc, onDocChange, onTitleChange }: EditorAppP
     const idx = c.questions.findIndex((q) => q.id === id)
     if (idx < 0) return
     const src = c.questions[idx]
+    // Fresh option ids, so the answer key and the routing have to be carried
+    // across to them or the copy would silently mark and route nothing.
+    const remap = new Map((src.options ?? []).map((o) => [o.id, uid()]))
     const clone: FormQuestion = {
       ...structuredClone(src),
       id: uid(),
-      options: src.options?.map((o) => ({ ...o, id: uid() })),
+      options: src.options?.map((o) => ({ ...o, id: remap.get(o.id) ?? uid() })),
+      correct: src.correct?.map((cid) => remap.get(cid) ?? cid),
+      branches: src.branches?.map((b) => ({ ...b, optionId: remap.get(b.optionId) ?? b.optionId })),
     }
     const arr = [...c.questions]
     arr.splice(idx + 1, 0, clone)
@@ -513,8 +797,29 @@ export default function FormsApp({ doc, onDocChange, onTitleChange }: EditorAppP
     const c = contentRef.current
     const idx = c.questions.findIndex((q) => q.id === id)
     if (idx < 0) return
-    const arr = c.questions.filter((q) => q.id !== id)
+    // Deleting a section is the usual way a branch ends up pointing at nothing.
+    // Clearing those here is the difference between "it carries on, as it says
+    // in the editor" and a dangling route nobody notices until someone fills
+    // the form in.
+    const orphaned = c.questions.reduce(
+      (n, q) => n + (q.branches ?? []).filter((b) => b.goTo === id).length,
+      0,
+    )
+    const arr = c.questions
+      .filter((q) => q.id !== id)
+      .map((q) =>
+        (q.branches ?? []).some((b) => b.goTo === id)
+          ? { ...q, branches: q.branches?.filter((b) => b.goTo !== id) }
+          : q,
+      )
     commit({ ...c, questions: arr })
+    if (orphaned > 0) {
+      showToast(
+        orphaned === 1
+          ? 'One answer routed to that section — it now continues to the next one.'
+          : `${orphaned} answers routed to that section — they now continue to the next one.`,
+      )
+    }
     if (selectedIdRef.current === id) setSelectedId(arr[Math.min(idx, arr.length - 1)]?.id ?? '')
   }
 
@@ -619,10 +924,30 @@ export default function FormsApp({ doc, onDocChange, onTitleChange }: EditorAppP
     { label: 'Section break', onClick: () => addQuestion('section') },
   ]
 
-  function toggleSetting(key: 'showQuestionNumbers' | 'showProgress') {
+  function toggleSetting(key: 'showQuestionNumbers' | 'showProgress' | 'showScore') {
     const c = contentRef.current
     commit({ ...c, settings: { ...c.settings, [key]: !c.settings[key] } })
   }
+
+  function setQuizMode(on: boolean) {
+    const c = contentRef.current
+    // Showing the score is what makes a self-marking quiz worth having, so it
+    // comes on with it; an author who wants marks kept back can turn it off.
+    commit({ ...c, settings: { ...c.settings, quizMode: on, showScore: on ? true : c.settings.showScore } })
+  }
+
+  const quiz = !!content.settings.quizMode
+  const marksTotal = useMemo(() => quizTotal(content.questions), [content.questions])
+  const marked = useMemo(() => content.questions.filter(hasAnswerKey).length, [content.questions])
+
+  // Grouped by question so a card can show its own problems without every card
+  // scanning the whole form.
+  const problems = useMemo(() => {
+    const map: Record<string, string[]> = {}
+    for (const p of branchProblems(content.questions)) (map[p.questionId] ??= []).push(p.message)
+    return map
+  }, [content.questions])
+  const problemCount = Object.values(problems).reduce((n, list) => n + list.length, 0)
 
   return (
     <div className="fm-root">
@@ -697,6 +1022,19 @@ export default function FormsApp({ doc, onDocChange, onTitleChange }: EditorAppP
               icon: content.settings.showProgress ? <IcCheck /> : <span style={{ width: 17 }} />,
               onClick: () => toggleSetting('showProgress'),
             },
+            'sep',
+            { header: 'Marking' },
+            {
+              label: 'Make this a quiz',
+              icon: quiz ? <IcCheck /> : <span style={{ width: 17 }} />,
+              onClick: () => setQuizMode(!quiz),
+            },
+            {
+              label: 'Show respondents their score',
+              icon: content.settings.showScore ? <IcCheck /> : <span style={{ width: 17 }} />,
+              disabled: !quiz,
+              onClick: () => toggleSetting('showScore'),
+            },
           ]}
         />
 
@@ -749,10 +1087,25 @@ export default function FormsApp({ doc, onDocChange, onTitleChange }: EditorAppP
               />
             </div>
 
+            {problemCount > 0 && (
+              <div className="fm-warn-card" role="status">
+                <strong>
+                  {problemCount === 1 ? 'One answer routes somewhere it should not' : `${problemCount} answers route somewhere they should not`}
+                </strong>
+                <span>
+                  Marked on the questions below. The exported form ignores a route it cannot follow and
+                  simply carries on, so nobody gets stuck — but it will not do what you meant.
+                </span>
+              </div>
+            )}
+
             {content.questions.map((q, i) => (
               <QuestionCard
                 key={q.id}
                 q={q}
+                all={content.questions}
+                quiz={quiz}
+                problems={problems[q.id] ?? []}
                 number={numbers[q.id]}
                 selected={q.id === selectedId}
                 canMoveUp={i > 0}
@@ -780,6 +1133,32 @@ export default function FormsApp({ doc, onDocChange, onTitleChange }: EditorAppP
                   </span>
                 }
               />
+            </div>
+
+            <div className="fm-settings-card">
+              <div className="fm-card-label">Marking</div>
+              <Toggle checked={quiz} label="Make this a quiz" onChange={setQuizMode} />
+              {quiz && (
+                <>
+                  <Toggle
+                    checked={!!content.settings.showScore}
+                    label="Show respondents their score and answers straight after they submit"
+                    onChange={() => toggleSetting('showScore')}
+                  />
+                  <div className="fm-card-note">
+                    {marked === 0
+                      ? 'No question has an answer key yet — open a question and tick the answer, or type the answers you will accept.'
+                      : `${marked} of ${content.questions.filter(isAnswerable).length} questions are marked, worth ${marksTotal} ${marksTotal === 1 ? 'mark' : 'marks'} in total.`}
+                  </div>
+                  {/* The honest bit. Marking happens on the respondent's machine
+                      because there is nowhere else for it to happen. */}
+                  <div className="fm-card-note">
+                    The form marks itself in the respondent’s own browser, so the answer key travels inside
+                    the file they receive — someone determined can read it. Good for practice, homework and
+                    self-assessment; not for an exam you need to invigilate.
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="fm-settings-card">

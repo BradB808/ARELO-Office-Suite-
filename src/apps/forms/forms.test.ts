@@ -6,12 +6,25 @@
 import {
   QUESTION_KINDS,
   FORM_THEMES,
+  BRANCH_END,
   newQuestion,
   isAnswerable,
   validateAnswer,
   answerToText,
   questionNumbers,
   scalePoints,
+  acceptedAnswers,
+  answeredPath,
+  branchProblems,
+  branchTarget,
+  formPages,
+  gradeAnswer,
+  gradeResponse,
+  hasAnswerKey,
+  nextPageIndex,
+  questionMarks,
+  quizTotal,
+  sectionsAfter,
 } from './model'
 import {
   encodeResponse,
@@ -19,10 +32,11 @@ import {
   parseResponsePayload,
   responsesToCsv,
   responsesToSheet,
+  scoreStats,
   summarize,
 } from './responses'
 import { SYSTEM_FONTS } from '../../shared/fonts'
-import type { FormQuestion, FormResponse, QuestionKind } from '../../shared/types'
+import type { FormOption, FormQuestion, FormResponse, QuestionKind } from '../../shared/types'
 
 let passed = 0
 let failed = 0
@@ -592,6 +606,502 @@ eq('summary: section answered is zero', headingSummary.answered, 0)
 eq('summary: section skipped is zero', headingSummary.skipped, 0)
 eq('summary: section has no buckets', headingSummary.buckets, [])
 eq('summary: section has no average', headingSummary.average, null)
+
+// ---------- quiz: the answer key ----------
+
+const noKey: FormQuestion = { id: 'k0', kind: 'short', title: 'Free text' }
+eq('key: absent by default', hasAnswerKey(noKey), false)
+eq('key: blank entries do not count', hasAnswerKey({ ...noKey, correct: ['', '  '] }), false)
+eq('key: a typed answer counts', hasAnswerKey({ ...noKey, correct: ['Paris'] }), true)
+eq('key: a section can never be marked', hasAnswerKey({ id: 's', kind: 'section', title: 'x', correct: ['a'] }), false)
+
+const keyed = (kind: QuestionKind, extra: Partial<FormQuestion>): FormQuestion => ({
+  ...newQuestion(kind),
+  id: `q-${kind}`,
+  ...extra,
+})
+
+const capitals: FormQuestion = keyed('choice', {
+  options: [
+    { id: 'a', label: 'Paris' },
+    { id: 'b', label: 'Lyon' },
+    { id: 'c', label: 'Nice' },
+  ],
+  correct: ['a'],
+})
+eq('key: option ids resolve to their labels', acceptedAnswers(capitals), ['Paris'])
+eq(
+  'key: an id matching no option is taken literally',
+  acceptedAnswers({ ...capitals, correct: ['a', 'Marseille'] }),
+  ['Paris', 'Marseille'],
+)
+
+eq('marks: none without a key', questionMarks(noKey), 0)
+eq('marks: a key with no marks set is worth one', questionMarks(capitals), 1)
+eq('marks: an explicit value is used', questionMarks({ ...capitals, points: 3 }), 3)
+eq('marks: an explicit zero is respected', questionMarks({ ...capitals, points: 0 }), 0)
+eq('marks: a nonsense value falls back to one', questionMarks({ ...capitals, points: Number.NaN }), 1)
+eq('marks: a negative value falls back to one', questionMarks({ ...capitals, points: -4 }), 1)
+eq('marks: half marks survive', questionMarks({ ...capitals, points: 0.5 }), 0.5)
+
+// ---------- quiz: grading, kind by kind ----------
+
+const UNMARKED = { earned: 0, total: 0, correct: null }
+
+eq('grade: no key means not marked at all', gradeAnswer(noKey, 'anything'), UNMARKED)
+eq('grade: a key of blanks is no key', gradeAnswer({ ...noKey, correct: ['  '] }, 'x'), UNMARKED)
+eq('grade: sections are never marked', gradeAnswer({ id: 's', kind: 'section', title: 'x', correct: ['a'] }, 'a'), UNMARKED)
+
+eq('grade: choice right', gradeAnswer(capitals, 'Paris'), { earned: 1, total: 1, correct: true })
+eq('grade: choice wrong', gradeAnswer(capitals, 'Lyon'), { earned: 0, total: 1, correct: false })
+eq('grade: choice unanswered', gradeAnswer(capitals, undefined), { earned: 0, total: 1, correct: false })
+eq('grade: choice blank string', gradeAnswer(capitals, '   '), { earned: 0, total: 1, correct: false })
+eq('grade: choice carries its marks', gradeAnswer({ ...capitals, points: 4 }, 'Paris'), {
+  earned: 4,
+  total: 4,
+  correct: true,
+})
+eq('grade: choice is case-insensitive', gradeAnswer(capitals, 'paris'), { earned: 1, total: 1, correct: true })
+eq('grade: choice ignores surrounding space', gradeAnswer(capitals, '  Paris '), { earned: 1, total: 1, correct: true })
+
+const dropdown: FormQuestion = keyed('dropdown', {
+  options: [
+    { id: 'y1', label: '1989' },
+    { id: 'y2', label: '1990' },
+  ],
+  correct: ['y1'],
+  points: 2,
+})
+eq('grade: dropdown right', gradeAnswer(dropdown, '1989'), { earned: 2, total: 2, correct: true })
+eq('grade: dropdown wrong', gradeAnswer(dropdown, '1990'), { earned: 0, total: 2, correct: false })
+
+const nobles: FormQuestion = keyed('checkboxes', {
+  options: [
+    { id: 'he', label: 'Helium' },
+    { id: 'n', label: 'Nitrogen' },
+    { id: 'ar', label: 'Argon' },
+    { id: 'ne', label: 'Neon' },
+  ],
+  correct: ['he', 'ar', 'ne'],
+  points: 3,
+})
+eq('grade: checkboxes all three right', gradeAnswer(nobles, ['Helium', 'Argon', 'Neon']), {
+  earned: 3,
+  total: 3,
+  correct: true,
+})
+eq('grade: checkboxes order does not matter', gradeAnswer(nobles, ['Neon', 'Helium', 'Argon']), {
+  earned: 3,
+  total: 3,
+  correct: true,
+})
+eq('grade: checkboxes partial credit', gradeAnswer(nobles, ['Helium', 'Argon']), {
+  earned: 2,
+  total: 3,
+  correct: false,
+})
+eq('grade: checkboxes one right', gradeAnswer(nobles, ['Neon']), { earned: 1, total: 3, correct: false })
+eq('grade: checkboxes a wrong tick costs a right one', gradeAnswer(nobles, ['Helium', 'Argon', 'Nitrogen']), {
+  earned: 1,
+  total: 3,
+  correct: false,
+})
+eq('grade: checkboxes ticking everything scores nothing', gradeAnswer(nobles, ['Helium', 'Nitrogen', 'Argon', 'Neon']), {
+  earned: 2,
+  total: 3,
+  correct: false,
+})
+eq(
+  'grade: checkboxes cannot go below zero',
+  gradeAnswer({ ...nobles, correct: ['he'] }, ['Nitrogen', 'Argon', 'Neon']),
+  { earned: 0, total: 3, correct: false },
+)
+eq('grade: checkboxes nothing ticked', gradeAnswer(nobles, []), { earned: 0, total: 3, correct: false })
+eq('grade: checkboxes duplicate ticks counted once', gradeAnswer(nobles, ['Helium', 'helium']), {
+  earned: 1,
+  total: 3,
+  correct: false,
+})
+// Two options wearing the same label are one answer to whoever ticks them, and
+// one answer on the wire, which carries labels rather than ids. Counting the key
+// twice made a question nobody could get full marks on.
+const twins = keyed('checkboxes', {
+  options: [
+    { id: 't1', label: 'Red' },
+    { id: 't2', label: 'red' },
+    { id: 't3', label: 'Blue' },
+  ],
+  correct: ['t1', 't2'],
+  points: 2,
+})
+eq('grade: a key naming two options with one label is one answer', gradeAnswer(twins, ['Red']), {
+  earned: 2,
+  total: 2,
+  correct: true,
+})
+eq('grade: ticking both of them scores the same', gradeAnswer(twins, ['Red', 'red']), {
+  earned: 2,
+  total: 2,
+  correct: true,
+})
+eq('grade: the wrong one still costs', gradeAnswer(twins, ['Red', 'Blue']), {
+  earned: 0,
+  total: 2,
+  correct: false,
+})
+// A third of two marks is 0.6666…, which nobody wants to read on a marked paper.
+eq('grade: part marks are rounded to two places', gradeAnswer({ ...nobles, points: 2 }, ['Helium']).earned, 0.67)
+
+const capital = keyed('short', { correct: ['Canberra', 'Canberra, ACT'] })
+eq('grade: short exact', gradeAnswer(capital, 'Canberra'), { earned: 1, total: 1, correct: true })
+eq('grade: short ignores case', gradeAnswer(capital, 'canberra'), { earned: 1, total: 1, correct: true })
+eq('grade: short ignores surrounding whitespace', gradeAnswer(capital, '  CANBERRA \n'), {
+  earned: 1,
+  total: 1,
+  correct: true,
+})
+eq('grade: short accepts a second wording', gradeAnswer(capital, 'canberra, act'), {
+  earned: 1,
+  total: 1,
+  correct: true,
+})
+eq('grade: short wrong', gradeAnswer(capital, 'Sydney'), { earned: 0, total: 1, correct: false })
+eq('grade: short blank', gradeAnswer(capital, ''), { earned: 0, total: 1, correct: false })
+eq('grade: short does not match a substring', gradeAnswer(capital, 'Canberra is the capital'), {
+  earned: 0,
+  total: 1,
+  correct: false,
+})
+
+const sides = keyed('number', { correct: ['6', 'six'] })
+eq('grade: number exact', gradeAnswer(sides, '6'), { earned: 1, total: 1, correct: true })
+eq('grade: number written out', gradeAnswer(sides, 'Six'), { earned: 1, total: 1, correct: true })
+// 7.0 and 07 are the same number to everyone except a string comparison.
+eq('grade: number trailing zero', gradeAnswer(sides, '6.0'), { earned: 1, total: 1, correct: true })
+eq('grade: number leading zero', gradeAnswer(sides, '06'), { earned: 1, total: 1, correct: true })
+eq('grade: number wrong', gradeAnswer(sides, '7'), { earned: 0, total: 1, correct: false })
+eq(
+  'grade: numeric leniency does not leak into short answers',
+  gradeAnswer({ ...capital, correct: ['6'] }, '6.0'),
+  { earned: 0, total: 1, correct: false },
+)
+
+const when = keyed('date', { correct: ['2026-12-21'] })
+eq('grade: date right', gradeAnswer(when, '2026-12-21'), { earned: 1, total: 1, correct: true })
+eq('grade: date wrong', gradeAnswer(when, '2026-12-22'), { earned: 0, total: 1, correct: false })
+
+const at = keyed('time', { correct: ['09:30'] })
+eq('grade: time right', gradeAnswer(at, '09:30'), { earned: 1, total: 1, correct: true })
+eq('grade: time wrong', gradeAnswer(at, '09:31'), { earned: 0, total: 1, correct: false })
+
+eq('grade: email right', gradeAnswer(keyed('email', { correct: ['a@b.com'] }), 'A@B.com'), {
+  earned: 1,
+  total: 1,
+  correct: true,
+})
+eq('grade: scale right', gradeAnswer(keyed('scale', { correct: ['4'] }), '4'), { earned: 1, total: 1, correct: true })
+eq('grade: paragraph right', gradeAnswer(keyed('paragraph', { correct: ['yes'] }), 'Yes'), {
+  earned: 1,
+  total: 1,
+  correct: true,
+})
+eq('grade: a question worth zero still marks', gradeAnswer({ ...capitals, points: 0 }, 'Paris'), {
+  earned: 0,
+  total: 0,
+  correct: true,
+})
+
+// ---------- quiz: a whole paper ----------
+
+const paper: FormQuestion[] = [
+  { id: 'name', kind: 'short', title: 'Your name' },
+  { id: 'sec', kind: 'section', title: 'Round one' },
+  { ...capitals, id: 'c1' },
+  { ...nobles, id: 'c2' },
+  { ...capital, id: 'c3', points: 2 },
+]
+eq('quiz: marks available', quizTotal(paper), 6)
+eq('quiz: an unmarked form is worth nothing', quizTotal([{ id: 'x', kind: 'short', title: 'Name' }]), 0)
+eq(
+  'quiz: full marks',
+  gradeResponse(paper, { name: 'Ada', c1: 'Paris', c2: ['Helium', 'Argon', 'Neon'], c3: 'canberra' }),
+  { earned: 6, total: 6 },
+)
+eq(
+  'quiz: one right, one part, one wrong',
+  gradeResponse(paper, { c1: 'Paris', c2: ['Helium'], c3: 'Sydney' }),
+  { earned: 2, total: 6 },
+)
+eq('quiz: an empty paper still totals', gradeResponse(paper, {}), { earned: 0, total: 6 })
+eq('quiz: unmarked questions add nothing', gradeResponse([{ id: 'n', kind: 'short', title: 'Name' }], { n: 'Ada' }), {
+  earned: 0,
+  total: 0,
+})
+eq(
+  'quiz: only the questions handed in are marked',
+  gradeResponse([paper[2]], { c1: 'Paris', c2: ['Helium'], c3: 'Canberra' }),
+  { earned: 1, total: 1 },
+)
+
+// ---------- sections as pages ----------
+
+const s = (id: string, title = id): FormQuestion => ({ id, kind: 'section', title })
+const shortQof = (id: string): FormQuestion => ({ id, kind: 'short', title: id })
+
+eq('pages: a form with no sections is one page', formPages([shortQof('a'), shortQof('b')]).length, 1)
+eq('pages: the leading page has no section', formPages([shortQof('a')])[0].section, null)
+eq('pages: the leading page is called start', formPages([shortQof('a')])[0].id, 'start')
+eq('pages: each section starts a page', formPages([shortQof('a'), s('s1'), shortQof('b'), s('s2'), shortQof('c')]).length, 3)
+eq(
+  'pages: a form opening with a section does not open on a blank page',
+  formPages([s('s1'), shortQof('a')]).map((p) => p.id),
+  ['s1'],
+)
+eq('pages: an empty form has no pages', formPages([]), [])
+eq('pages: a section with no questions is still a page', formPages([s('s1'), s('s2')]).map((p) => p.id), ['s1', 's2'])
+eq(
+  'pages: questions land on the page they follow',
+  formPages([shortQof('a'), s('s1'), shortQof('b'), shortQof('c')]).map((p) => p.questions.map((x) => x.id)),
+  [['a'], ['b', 'c']],
+)
+
+// ---------- branching ----------
+
+const route: FormOption[] = [
+  { id: 'o-yes', label: 'Yes' },
+  { id: 'o-no', label: 'No' },
+]
+const branched: FormQuestion = {
+  id: 'gate',
+  kind: 'choice',
+  title: 'Coming?',
+  options: route,
+  branches: [
+    { optionId: 'o-yes', goTo: 'details' },
+    { optionId: 'o-no', goTo: BRANCH_END },
+  ],
+}
+const branchingForm: FormQuestion[] = [
+  branched,
+  s('details', 'Your details'),
+  shortQof('meal'),
+  s('closing', 'Anything else'),
+  shortQof('note'),
+]
+const branchPages = formPages(branchingForm)
+
+eq('branch: an answer with a route returns it', branchTarget(branched, 'Yes'), 'details')
+eq('branch: the other answer ends the form', branchTarget(branched, 'No'), BRANCH_END)
+eq('branch: an unanswered question routes nowhere', branchTarget(branched, undefined), null)
+eq('branch: a blank answer routes nowhere', branchTarget(branched, '  '), null)
+eq('branch: matching is case-insensitive', branchTarget(branched, 'yes'), 'details')
+eq('branch: an answer with no route returns null', branchTarget({ ...branched, branches: [] }, 'Yes'), null)
+eq(
+  'branch: only choice and dropdown route',
+  branchTarget({ ...branched, kind: 'checkboxes' }, 'Yes'),
+  null,
+)
+
+eq('branch: yes goes to the details section', nextPageIndex(branchPages, 0, { gate: 'Yes' }), 1)
+eq('branch: no ends the form', nextPageIndex(branchPages, 0, { gate: 'No' }), -1)
+eq('branch: no answer carries on to the next page', nextPageIndex(branchPages, 0, {}), 1)
+eq('branch: the last page ends the form', nextPageIndex(branchPages, 2, {}), -1)
+eq('branch: an unknown page index ends rather than throws', nextPageIndex(branchPages, 99, {}), -1)
+
+// A section is deleted after the routing was set. The route cannot be obeyed,
+// and stranding the respondent would be the worst of the options.
+const orphaned = formPages([branched, s('closing', 'Anything else'), shortQof('note')])
+eq('branch: a route to a deleted section falls through to the next page', nextPageIndex(orphaned, 0, { gate: 'Yes' }), 1)
+eq('branch: the surviving route still works', nextPageIndex(orphaned, 0, { gate: 'No' }), -1)
+
+// Two routing questions on one page: the one they answered most recently is
+// the one still in front of them.
+const twoGates = formPages([
+  branched,
+  { ...branched, id: 'gate2', branches: [{ optionId: 'o-yes', goTo: 'closing' }] },
+  s('details', 'Your details'),
+  shortQof('meal'),
+  s('closing', 'Anything else'),
+  shortQof('note'),
+])
+eq('branch: the last routing question on a page wins', nextPageIndex(twoGates, 0, { gate: 'Yes', gate2: 'Yes' }), 2)
+eq('branch: an unanswered later question defers to an earlier one', nextPageIndex(twoGates, 0, { gate: 'Yes' }), 1)
+
+eq(
+  'path: a route past a section leaves its questions out',
+  answeredPath(branchingForm, { gate: 'No' }).map((x) => x.id),
+  ['gate'],
+)
+eq(
+  'path: the other route walks through everything',
+  answeredPath(branchingForm, { gate: 'Yes' }).map((x) => x.id),
+  ['gate', 'meal', 'note'],
+)
+eq(
+  'path: no answer follows the form in order',
+  answeredPath(branchingForm, {}).map((x) => x.id),
+  ['gate', 'meal', 'note'],
+)
+// A route into the page the question is already on can never be walked off, so
+// it is ignored and the form carries on. Obeying it leaves a respondent pressing
+// Next on the same page forever, unable to reach Submit at all.
+const selfRouted: FormQuestion[] = [
+  s('one', 'One'),
+  { ...branched, branches: [{ optionId: 'o-yes', goTo: 'one' }] },
+  s('two', 'Two'),
+  shortQof('later'),
+]
+eq('branch: a route to its own page is ignored', nextPageIndex(formPages(selfRouted), 0, { gate: 'Yes' }), 1)
+eq(
+  'path: a route to its own page carries on',
+  answeredPath(selfRouted, { gate: 'Yes' }).map((x) => x.id),
+  ['gate', 'later'],
+)
+
+// A route to an *earlier* page is a loop a respondent can walk round on purpose
+// and leave by changing their answer; replaying one here has to stop rather
+// than hang the app.
+const looping: FormQuestion[] = [
+  s('one', 'One'),
+  shortQof('first'),
+  s('two', 'Two'),
+  { ...branched, branches: [{ optionId: 'o-yes', goTo: 'one' }] },
+]
+eq('branch: a route to an earlier page is obeyed', nextPageIndex(formPages(looping), 1, { gate: 'Yes' }), 0)
+eq('path: a loop is walked once', answeredPath(looping, { gate: 'Yes' }).map((x) => x.id), ['first', 'gate'])
+
+eq(
+  'targets: only sections after the question are offered',
+  sectionsAfter(branchingForm, 'gate').map((x) => x.id),
+  ['details', 'closing'],
+)
+eq(
+  'targets: a question on the last page has nowhere to send anyone',
+  sectionsAfter(branchingForm, 'note').map((x) => x.id),
+  [],
+)
+eq('targets: a question that is not in the form has no targets', sectionsAfter(branchingForm, 'nope'), [])
+
+eq('problems: a well-formed branch has none', branchProblems(branchingForm), [])
+const missing = branchProblems([branched, s('closing', 'Anything else'), shortQof('note')])
+eq('problems: a deleted section is reported once', missing.length, 1)
+eq('problems: reported against its question', missing[0].questionId, 'gate')
+eq('problems: named as missing', missing[0].kind, 'missing')
+ok('problems: the message names the option', missing[0].message.includes('Yes'))
+const backwards = branchProblems(looping)
+eq('problems: a backwards jump is reported', backwards.length, 1)
+eq('problems: named as backwards', backwards[0].kind, 'backwards')
+ok('problems: the message names the section it jumps back to', backwards[0].message.includes('One'))
+ok('problems: the message says they could go round forever', backwards[0].message.includes('forever'))
+eq(
+  'problems: a branch to the end of the form is fine',
+  branchProblems([{ ...branched, branches: [{ optionId: 'o-yes', goTo: BRANCH_END }] }, s('later', 'Later')]),
+  [],
+)
+const ownPage = branchProblems([s('one', 'One'), { ...branched, branches: [{ optionId: 'o-yes', goTo: 'one' }] }])
+eq('problems: a branch to its own page is reported', ownPage[0].kind, 'backwards')
+ok('problems: it is described as doing nothing, not as looping', ownPage[0].message.includes('carry on'))
+
+// ---------- scores on the wire ----------
+
+const marked: FormResponse = {
+  id: 'm1',
+  submittedAt: 1_760_000_000_000,
+  answers: { q1: 'Paris' },
+  score: { earned: 7, total: 10 },
+}
+const markedCode = encodeResponse(marked)
+eq('score: round trips through the code', decodeResponse(markedCode), marked)
+eq('score: earned survives', decodeResponse(markedCode)?.score?.earned, 7)
+eq('score: out of survives', decodeResponse(markedCode)?.score?.total, 10)
+eq('score: part marks survive', decodeResponse(encodeResponse({ ...marked, score: { earned: 6.67, total: 10 } }))?.score, {
+  earned: 6.67,
+  total: 10,
+})
+eq('score: full marks survive', decodeResponse(encodeResponse({ ...marked, score: { earned: 10, total: 10 } }))?.score?.earned, 10)
+eq('score: zero survives', decodeResponse(encodeResponse({ ...marked, score: { earned: 0, total: 10 } }))?.score?.earned, 0)
+eq('score: an unmarked response has none', decodeResponse(code)?.score, undefined)
+
+// A wrong score in the author's table is worse than no score, so anything that
+// cannot be true is dropped rather than repaired.
+const badScore = (score: unknown): unknown =>
+  decodeResponse(encodeResponse({ ...marked, score } as unknown as FormResponse))?.score
+eq('score: more than the paper is worth is dropped', badScore({ earned: 11, total: 10 }), undefined)
+eq('score: a negative score is dropped', badScore({ earned: -1, total: 10 }), undefined)
+eq('score: an unmarkable paper is dropped', badScore({ earned: 0, total: 0 }), undefined)
+eq('score: text instead of numbers is dropped', badScore({ earned: 'lots', total: '10' }), undefined)
+eq('score: a missing total is dropped', badScore({ earned: 3 }), undefined)
+eq('score: an array is dropped', badScore([7, 10]), undefined)
+eq('score: null is dropped', badScore(null), undefined)
+ok('score: the rest of the response survives a bad score', decodeResponse(encodeResponse({ ...marked, score: { earned: 99, total: 1 } } as FormResponse))?.answers.q1 === 'Paris')
+
+// ---------- marks in the tabular output ----------
+
+const quizQuestions: FormQuestion[] = [
+  { id: 'q1', kind: 'short', title: 'Name' },
+  { id: 'q2', kind: 'choice', title: 'Capital of France', options: [{ id: 'a', label: 'Paris' }], correct: ['a'] },
+]
+const quizResponses: FormResponse[] = [
+  { id: 'r1', submittedAt: new Date(2026, 0, 2, 3, 4).getTime(), answers: { q1: 'Ada', q2: 'Paris' }, score: { earned: 1, total: 1 } },
+  { id: 'r2', submittedAt: new Date(2026, 0, 3, 3, 4).getTime(), answers: { q1: 'Bob', q2: 'Lyon' }, score: { earned: 0, total: 1 } },
+]
+const quizCsv = responsesToCsv(quizQuestions, quizResponses).split('\r\n')
+eq('csv: marks get their own columns', quizCsv[0], 'Submitted,Score,Out of,Name,Capital of France')
+eq('csv: the score is a number, not "1 / 1"', quizCsv[1], '2026-01-02 03:04,1,1,Ada,Paris')
+eq('csv: a zero score is written, not left blank', quizCsv[2], '2026-01-03 03:04,0,1,Bob,Lyon')
+ok('csv: a survey gains no score columns', !responsesToCsv(questions, csvResponses).includes('Out of'))
+ok(
+  'csv: a response with no score leaves the cells empty',
+  responsesToCsv(quizQuestions, [quizResponses[0], { id: 'r3', submittedAt: 0, answers: { q1: 'Cy' } }])
+    .split('\r\n')[2]
+    .endsWith(',,,Cy,'),
+)
+
+const quizSheet = responsesToSheet(quizQuestions, quizResponses).sheets[0]
+eq('sheet: score header', quizSheet.cells['B1']?.v, 'Score')
+eq('sheet: out-of header', quizSheet.cells['C1']?.v, 'Out of')
+eq('sheet: questions shift right of the marks', quizSheet.cells['D1']?.v, 'Name')
+eq('sheet: the score lands as a number', quizSheet.cells['B2']?.v, '1')
+eq('sheet: a zero score is written', quizSheet.cells['B3']?.v, '0')
+eq('sheet: answers still follow', quizSheet.cells['D2']?.v, 'Ada')
+ok('sheet: the marks columns are sized', (quizSheet.colWidths[1] ?? 0) > 0 && (quizSheet.colWidths[2] ?? 0) > 0)
+ok('sheet: a survey gains no marks column', responsesToSheet(questions, csvResponses).sheets[0].cells['B1']?.v === 'Name')
+
+// ---------- how the class did ----------
+
+eq('stats: nothing to report without marks', scoreStats(csvResponses), null)
+eq('stats: nothing to report with no responses', scoreStats([]), null)
+const classOf = (...marks: number[]): FormResponse[] =>
+  marks.map((earned, i) => ({ id: `s${i}`, submittedAt: i, answers: {}, score: { earned, total: 10 } }))
+const stats = scoreStats(classOf(10, 8, 7, 5, 5, 1))!
+eq('stats: counted', stats.count, 6)
+eq('stats: average', stats.average, 6)
+eq('stats: highest', stats.highest, 10)
+eq('stats: lowest', stats.lowest, 1)
+eq('stats: out of', stats.outOf, 10)
+// A paper edited half way through a class: "highest 12, out of 10" is a worse
+// answer than quoting the longest paper anyone actually sat.
+eq(
+  'stats: out of is the largest paper seen',
+  scoreStats([
+    { id: 'a', submittedAt: 1, answers: {}, score: { earned: 5, total: 10 } },
+    { id: 'b', submittedAt: 2, answers: {}, score: { earned: 6, total: 8 } },
+  ])!.outOf,
+  10,
+)
+eq('stats: five bands', stats.distribution.length, 5)
+eq('stats: banded', stats.distribution.map((b) => b.count), [1, 0, 2, 1, 2])
+eq('stats: band labels', stats.distribution.map((b) => b.label), ['0–19%', '20–39%', '40–59%', '60–79%', '80–100%'])
+// 20% is the first mark of the second band and 100% the last of the fifth.
+eq('stats: a band edge lands in the higher band', scoreStats(classOf(2))!.distribution.map((b) => b.count), [0, 1, 0, 0, 0])
+eq('stats: full marks land in the top band', scoreStats(classOf(10))!.distribution[4].count, 1)
+eq('stats: zero lands in the bottom band', scoreStats(classOf(0))!.distribution[0].count, 1)
+eq('stats: an average is rounded to two places', scoreStats(classOf(1, 2))!.average, 1.5)
+eq(
+  'stats: unmarked responses are left out',
+  scoreStats([...classOf(10), { id: 'x', submittedAt: 9, answers: {} }])!.count,
+  1,
+)
 
 console.log(`\n${passed} passed, ${failed} failed (${passed + failed} assertions)`)
 if (failed) process.exitCode = 1

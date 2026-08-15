@@ -1,7 +1,7 @@
 {
   "name": "anleo-office",
   "productName": "Anleo Office",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A completely free, offline office suite \u2014 documents, spreadsheets, and presentations in one app.",
   "author": "Anleo",
   "license": "MIT",
@@ -23,7 +23,11 @@
     "build:e2e": "vite build --ssr src/apps/forms/e2e-roundtrip.ts --outDir .tmp-e2e",
     "test:forms-e2e": "npm run build:e2e && electron scripts/forms-e2e.cjs",
     "test:ui": "npm run build && electron scripts/forms-ui-e2e.cjs",
-    "test:contrast": "npm run build && electron scripts/contrast-check.cjs"
+    "test:pivot-ui": "npm run build && electron scripts/pivot-ui-e2e.cjs",
+    "test:contrast": "npm run build && electron scripts/contrast-check.cjs",
+    "test:charts": "npm run build && npm run build:chartgeom && electron scripts/charts-ui-e2e.cjs",
+    "build:chartgeom": "vite build --ssr src/apps/sheets/chartGeom.ts --outDir .tmp-chart-geom",
+    "test:pivot": "npm run build && electron scripts/pivot-ui-e2e.cjs"
   },
   "devDependencies": {
     "@tiptap/extension-highlight": "^3.28.0",

@@ -8,7 +8,15 @@ import { platform } from '../../shared/platform'
 import { Button, MenuButton, Modal, Segmented, Spacer, type MenuItem } from '../../shared/ui'
 import { IcExport, IcMore, IcSheets, IcTrash } from '../../shared/icons'
 import { answerToText, isAnswerable, questionNumbers } from './model'
-import { parseResponsePayload, responsesToCsv, responsesToSheet, summarize, type Summary } from './responses'
+import {
+  parseResponsePayload,
+  responsesToCsv,
+  responsesToSheet,
+  scoreStats,
+  summarize,
+  type ScoreStats,
+  type Summary,
+} from './responses'
 import './responses.css'
 
 const ARESP_FILTER = [{ name: 'Anleo response', extensions: ['aresp'] }]
@@ -26,15 +34,150 @@ function whenText(ms: number): string {
   return new Date(ms).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+interface Bucket {
+  label: string
+  count: number
+}
+
+function Bars({ buckets, of }: { buckets: Bucket[]; of: number }) {
+  const total = Math.max(1, of)
+  return (
+    <div className="fm-resp-bars">
+      {buckets.map((b, i) => {
+        const pct = Math.round((b.count / total) * 100)
+        return (
+          <div className="fm-resp-bar-row" key={`${b.label}-${i}`}>
+            <span className="fm-resp-bar-label" title={b.label}>
+              {b.label}
+            </span>
+            <div className="fm-resp-track">
+              {b.count > 0 && <div className="fm-resp-fill" style={{ width: `${Math.max(pct, 1)}%` }} />}
+            </div>
+            <span className="fm-resp-bar-n">
+              {b.count}
+              <span className="fm-resp-pct">{pct}%</span>
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ---------- pie and donut, drawn by hand ----------
+//
+// No chart library, so the arcs are built here. The slices are one accent
+// stepped down towards a neutral rather than a set of unrelated hues: there is
+// exactly one themed colour to work with, and a rainbow would imply the options
+// mean something they do not.
+
+const SIZE = 132
+const R = 62
+const CENTRE = SIZE / 2
+
+function polar(radius: number, deg: number): [number, number] {
+  const rad = ((deg - 90) * Math.PI) / 180
+  return [CENTRE + radius * Math.cos(rad), CENTRE + radius * Math.sin(rad)]
+}
+
+function slicePath(from: number, to: number, inner: number): string {
+  const big = to - from > 180 ? 1 : 0
+  const [x0, y0] = polar(R, from)
+  const [x1, y1] = polar(R, to)
+  if (inner <= 0) return `M${CENTRE} ${CENTRE} L${x0} ${y0} A${R} ${R} 0 ${big} 1 ${x1} ${y1} Z`
+  const [x2, y2] = polar(inner, to)
+  const [x3, y3] = polar(inner, from)
+  return `M${x0} ${y0} A${R} ${R} 0 ${big} 1 ${x1} ${y1} L${x2} ${y2} A${inner} ${inner} 0 ${big} 0 ${x3} ${y3} Z`
+}
+
+/** Slice i of n: the accent, faded towards the panel as the list goes on. */
+function sliceFill(i: number, n: number): string {
+  const weight = n < 2 ? 100 : Math.round(100 - (i * 62) / (n - 1))
+  return `color-mix(in srgb, var(--accent) ${weight}%, var(--surface-3))`
+}
+
+function Pie({ buckets, donut }: { buckets: Bucket[]; donut: boolean }) {
+  const shown = buckets.filter((b) => b.count > 0)
+  const total = shown.reduce((n, b) => n + b.count, 0)
+  const inner = donut ? R * 0.58 : 0
+  if (total === 0) return <div className="fm-resp-none">Nobody has answered this yet.</div>
+
+  let at = 0
+  const slices = shown.map((b, i) => {
+    const from = at
+    at += (b.count / total) * 360
+    return { key: `${b.label}-${i}`, d: slicePath(from, at, inner), fill: sliceFill(i, shown.length) }
+  })
+
+  return (
+    <div className="fm-resp-chart">
+      <svg
+        className="fm-resp-pie"
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        role="img"
+        aria-label={shown.map((b) => `${b.label}: ${b.count}`).join(', ')}
+      >
+        {/* One answer is a whole circle, and an arc from 0° to 360° draws
+            nothing at all — the two endpoints are the same point. */}
+        {shown.length === 1 ? (
+          <>
+            <circle cx={CENTRE} cy={CENTRE} r={R} fill={sliceFill(0, 1)} />
+            {donut && <circle cx={CENTRE} cy={CENTRE} r={inner} className="fm-resp-hole" />}
+          </>
+        ) : (
+          slices.map((s) => <path key={s.key} d={s.d} fill={s.fill} className="fm-resp-slice" />)
+        )}
+        {donut && (
+          <text className="fm-resp-pie-n" x={CENTRE} y={CENTRE + 6} textAnchor="middle">
+            {total}
+          </text>
+        )}
+      </svg>
+      <ul className="fm-resp-legend">
+        {shown.map((b, i) => (
+          <li key={`${b.label}-${i}`}>
+            <span className="fm-resp-swatch" style={{ background: sliceFill(i, shown.length) }} />
+            <span className="fm-resp-legend-label" title={b.label}>
+              {b.label}
+            </span>
+            <span className="fm-resp-legend-n">
+              {b.count}
+              <span className="fm-resp-pct">{Math.round((b.count / total) * 100)}%</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+type ChartMode = 'bars' | 'pie' | 'donut'
+
+/** Only the pick-one-of-a-list kinds: a pie of a scale implies the slices have
+ *  no order, and a pie of free text would have as many slices as answers. */
+const PIEABLE = ['choice', 'checkboxes', 'dropdown']
+
 function SummaryCard({ summary, number }: { summary: Summary; number: number | undefined }) {
   const q = summary.question
-  const total = Math.max(1, summary.answered)
+  const [mode, setMode] = useState<ChartMode>('bars')
+  const canPie = PIEABLE.includes(q.kind) && summary.buckets.length > 0
 
   return (
     <section className="fm-resp-card">
       <div className="fm-resp-qhead">
         {number !== undefined && <span className="fm-resp-num">{number}.</span>}
         <h4 className="fm-resp-qtitle">{q.title || 'Untitled question'}</h4>
+        {canPie && (
+          <Segmented
+            value={mode}
+            onChange={(v) => setMode(v as ChartMode)}
+            options={[
+              { value: 'bars', label: 'Bars' },
+              { value: 'pie', label: 'Pie' },
+              { value: 'donut', label: 'Donut' },
+            ]}
+          />
+        )}
       </div>
       <div className="fm-resp-qmeta">
         {plural(summary.answered, 'answer', 'answers')}
@@ -50,25 +193,11 @@ function SummaryCard({ summary, number }: { summary: Summary; number: number | u
       {/* summarize() only fills buckets for the countable kinds, so the shape of
           the result picks the view rather than a second list of kinds here. */}
       {summary.buckets.length > 0 ? (
-        <div className="fm-resp-bars">
-          {summary.buckets.map((b, i) => {
-            const pct = Math.round((b.count / total) * 100)
-            return (
-              <div className="fm-resp-bar-row" key={`${b.label}-${i}`}>
-                <span className="fm-resp-bar-label" title={b.label}>
-                  {b.label}
-                </span>
-                <div className="fm-resp-track">
-                  {b.count > 0 && <div className="fm-resp-fill" style={{ width: `${Math.max(pct, 1)}%` }} />}
-                </div>
-                <span className="fm-resp-bar-n">
-                  {b.count}
-                  <span className="fm-resp-pct">{pct}%</span>
-                </span>
-              </div>
-            )
-          })}
-        </div>
+        canPie && mode !== 'bars' ? (
+          <Pie buckets={summary.buckets} donut={mode === 'donut'} />
+        ) : (
+          <Bars buckets={summary.buckets} of={summary.answered} />
+        )
       ) : summary.texts.length === 0 ? (
         <div className="fm-resp-none">Nobody has answered this yet.</div>
       ) : (
@@ -82,15 +211,48 @@ function SummaryCard({ summary, number }: { summary: Summary; number: number | u
   )
 }
 
+/** How the class did overall — the first thing an author wants after a quiz. */
+function ScoreCard({ stats, responses }: { stats: ScoreStats; responses: number }) {
+  const figures: [string, number][] = [
+    ['Average', stats.average],
+    ['Highest', stats.highest],
+    ['Lowest', stats.lowest],
+    ['Out of', stats.outOf],
+  ]
+  return (
+    <section className="fm-resp-card fm-score-card">
+      <div className="fm-resp-qhead">
+        <h4 className="fm-resp-qtitle">Marks</h4>
+      </div>
+      <div className="fm-resp-qmeta">
+        {stats.count === responses
+          ? `every response marked · ${Math.round((stats.average / stats.outOf) * 100)}% average`
+          : `${stats.count} of ${responses} responses were marked · ${Math.round((stats.average / stats.outOf) * 100)}% average`}
+      </div>
+      <div className="fm-score-figures">
+        {figures.map(([label, value]) => (
+          <div className="fm-score-figure" key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </div>
+      <Bars buckets={stats.distribution} of={stats.count} />
+    </section>
+  )
+}
+
 function ResponseTable({
   questions,
   numbers,
   responses,
+  scored,
   onDelete,
 }: {
   questions: FormQuestion[]
   numbers: Record<string, number>
   responses: FormResponse[]
+  scored: boolean
   onDelete: (id: string) => void
 }) {
   return (
@@ -100,6 +262,7 @@ function ResponseTable({
           <tr>
             <th className="fm-resp-idx">#</th>
             <th>Submitted</th>
+            {scored && <th>Score</th>}
             {questions.map((q) => (
               <th key={q.id}>
                 {numbers[q.id] !== undefined ? `${numbers[q.id]}. ` : ''}
@@ -114,6 +277,11 @@ function ResponseTable({
             <tr key={r.id}>
               <td className="fm-resp-idx">{i + 1}</td>
               <td className="fm-resp-when">{whenText(r.submittedAt)}</td>
+              {scored && (
+                <td className="fm-resp-score">
+                  {r.score ? `${r.score.earned} / ${r.score.total}` : <span className="fm-resp-blank">—</span>}
+                </td>
+              )}
               {questions.map((q) => {
                 const text = answerToText(q, r.answers[q.id])
                 return (
@@ -172,6 +340,7 @@ export function ResponsesPanel({
     () => answerable.map((q) => summarize(q, responses)),
     [answerable, responses],
   )
+  const stats = useMemo(() => scoreStats(responses), [responses])
 
   /** Returns false when that response is already collected. */
   function append(r: FormResponse): boolean {
@@ -343,6 +512,7 @@ export function ResponsesPanel({
           </div>
         ) : !showTable ? (
           <div className="fm-resp-column">
+            {stats && <ScoreCard stats={stats} responses={count} />}
             {summaries.length === 0 ? (
               <div className="fm-resp-card">
                 <div className="fm-resp-none">This form has no questions to summarise yet.</div>
@@ -356,6 +526,7 @@ export function ResponsesPanel({
             questions={answerable}
             numbers={numbers}
             responses={responses}
+            scored={stats !== null}
             onDelete={removeResponse}
           />
         )}

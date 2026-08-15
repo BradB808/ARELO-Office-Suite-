@@ -16,12 +16,22 @@
 // to be: the page is standalone and cannot import responses.ts. Both sides
 // produce "ANLEO-RESPONSE:" + URL-safe base64 of the UTF-8 JSON — keep them in
 // step, decodeResponse() is the only thing that ever reads this output.
+//
+// A form with sections is paginated: one section on screen at a time, Back and
+// Next between them. That is what makes branching mean anything — an answer can
+// only skip a section the respondent cannot already see. Questions on pages they
+// were routed past are neither validated nor submitted.
+//
+// A quiz marks itself here, in the respondent's browser, with the key carried
+// in data-key attributes on each question. Anyone who opens the file can read
+// it; the editor says so plainly rather than implying otherwise. The marking
+// rules mirror gradeAnswer() in model.ts and have to stay in step with it.
 
-import type { FormQuestion, FormsContent, FormTheme } from '../../shared/types'
+import type { FormOption, FormQuestion, FormsContent, FormTheme } from '../../shared/types'
 import { DEFAULT_FORM_THEME } from '../../shared/blank'
 import { cssFamily } from '../../shared/fonts'
 import { escapeHtml, jsonForScript, livingPage } from '../../shared/livingDoc'
-import { questionNumbers } from './model'
+import { BRANCH_END, acceptedAnswers, formPages, hasAnswerKey, questionMarks, questionNumbers } from './model'
 
 const MAX_SCALE_POINTS = 20
 const MAX_ROWS = 12
@@ -95,12 +105,34 @@ const PRIVACY_LINE =
 
 // ---------- fillable ----------
 
-function optionRows(q: FormQuestion, type: 'radio' | 'checkbox'): string {
+/** What the renderer needs to know beyond the question in front of it. */
+interface Ctx {
+  quiz: boolean
+  numbers: Record<string, number>
+  /** Section id → the page it starts, for turning a branch into a jump. */
+  pageOf: Map<string, number>
+}
+
+/**
+ * Where picking this option sends the respondent, as an attribute the page
+ * script reads off whichever input is checked. A branch at a section that has
+ * since been deleted emits nothing at all, so the form carries on to the next
+ * page instead of stranding someone — the same fallback nextPageIndex() takes.
+ */
+function gotoAttr(q: FormQuestion, o: FormOption, ctx: Ctx): string {
+  const b = (q.branches ?? []).find((x) => x.optionId === o.id)
+  if (!b) return ''
+  if (b.goTo === BRANCH_END) return ' data-goto="end"'
+  const to = ctx.pageOf.get(b.goTo)
+  return to === undefined ? '' : ` data-goto="${to}"`
+}
+
+function optionRows(q: FormQuestion, type: 'radio' | 'checkbox', ctx: Ctx): string {
   const name = `q_${escapeHtml(q.id)}`
   const rows = (q.options ?? [])
     .map(
       (o) =>
-        `<label class="afx-opt"><input type="${type}" name="${name}" value="${escapeHtml(o.label)}"><span>${escapeHtml(o.label)}</span></label>`,
+        `<label class="afx-opt"><input type="${type}" name="${name}" value="${escapeHtml(o.label)}"${gotoAttr(q, o, ctx)}><span>${escapeHtml(o.label)}</span></label>`,
     )
     .join('')
   if (!q.otherOption) return rows
@@ -112,19 +144,19 @@ function optionRows(q: FormQuestion, type: 'radio' | 'checkbox'): string {
     </div>`
 }
 
-function controlHtml(q: FormQuestion): string {
+function controlHtml(q: FormQuestion, ctx: Ctx): string {
   const ph = q.placeholder ? ` placeholder="${escapeHtml(q.placeholder)}"` : ''
   const label = ` aria-label="${escapeHtml(q.title)}"`
   switch (q.kind) {
     case 'paragraph':
       return `<textarea class="afx-field" rows="${rowCount(q, 2)}"${ph}${label}></textarea>`
     case 'choice':
-      return `<div class="afx-opts" role="radiogroup" aria-label="${escapeHtml(q.title)}">${optionRows(q, 'radio')}</div>`
+      return `<div class="afx-opts" role="radiogroup" aria-label="${escapeHtml(q.title)}">${optionRows(q, 'radio', ctx)}</div>`
     case 'checkboxes':
-      return `<div class="afx-opts" role="group" aria-label="${escapeHtml(q.title)}">${optionRows(q, 'checkbox')}</div>`
+      return `<div class="afx-opts" role="group" aria-label="${escapeHtml(q.title)}">${optionRows(q, 'checkbox', ctx)}</div>`
     case 'dropdown': {
       const opts = (q.options ?? [])
-        .map((o) => `<option value="${escapeHtml(o.label)}">${escapeHtml(o.label)}</option>`)
+        .map((o) => `<option value="${escapeHtml(o.label)}"${gotoAttr(q, o, ctx)}>${escapeHtml(o.label)}</option>`)
         .join('')
       return `<select class="afx-field afx-select"${label}><option value="">Choose…</option>${opts}</select>`
     }
@@ -154,17 +186,33 @@ function controlHtml(q: FormQuestion): string {
   }
 }
 
-function questionHtml(q: FormQuestion, number: number | undefined): string {
+function marksLabel(n: number): string {
+  return n === 1 ? '1 mark' : `${n} marks`
+}
+
+/** The answer key, as attributes the page's marker reads back. Kept on the
+ *  question rather than in the script so the script itself stays generic. */
+function quizAttrs(q: FormQuestion, ctx: Ctx): string {
+  if (!ctx.quiz || !hasAnswerKey(q)) return ''
+  const key = ` data-marks="${questionMarks(q)}" data-key="${escapeHtml(JSON.stringify(acceptedAnswers(q)))}"`
+  return q.feedback ? `${key} data-feedback="${escapeHtml(q.feedback)}"` : key
+}
+
+function questionHtml(q: FormQuestion, ctx: Ctx): string {
   const help = q.help ? `<p class="afx-help">${escapeHtml(q.help)}</p>` : ''
   if (q.kind === 'section')
     return `<section class="afx-q afx-sec"><h2>${escapeHtml(q.title)}</h2>${help}</section>`
 
+  const number = ctx.numbers[q.id]
   const num = number === undefined ? '' : `<span class="afx-num">${number}.</span> `
   const req = q.required ? '<span class="afx-req" aria-label="required">*</span>' : ''
-  return `<section class="afx-q" data-qid="${escapeHtml(q.id)}" data-kind="${escapeHtml(q.kind)}" data-required="${q.required ? '1' : '0'}">
+  const marks =
+    ctx.quiz && hasAnswerKey(q) ? `<span class="afx-marks">${marksLabel(questionMarks(q))}</span>` : ''
+  return `<section class="afx-q" data-qid="${escapeHtml(q.id)}" data-kind="${escapeHtml(q.kind)}" data-required="${q.required ? '1' : '0'}"${quizAttrs(q, ctx)}>
     <div class="afx-qtitle">${num}${escapeHtml(q.title)}${req}</div>
+    ${marks}
     ${help}
-    ${controlHtml(q)}
+    ${controlHtml(q, ctx)}
     <p class="afx-err" role="alert" hidden></p>
   </section>`
 }
@@ -226,6 +274,11 @@ const FILLABLE_CSS = `
   .afx-ptn { font-size: 13px; color: var(--muted); }
   .afx-pt input { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; }
   .afx-err { margin: 10px 0 0; font-size: 13px; color: #dc2626; font-weight: 500; }
+  .afx-marks {
+    display: inline-block; margin-top: 8px; font-size: 11.5px; font-weight: 600;
+    color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px;
+  }
+  .afx-pg[hidden] { display: none; }
   .afx-actions { margin-top: 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   .afx-btn {
     font: inherit; font-size: 15px; font-weight: 600; color: #fff; background: var(--accent);
@@ -246,6 +299,30 @@ const FILLABLE_CSS = `
     padding: 9px; resize: vertical; word-break: break-all;
   }
   .afx-said { font-size: 12.5px; color: var(--muted); margin-left: 4px; }
+  /* Marking. Red and green are literal here for the same reason every other
+     colour in this file is: the page has one fixed palette and no theme to
+     follow, and both are dark enough for body text on white. */
+  .afx-scorebox {
+    display: flex; align-items: center; gap: 16px; margin-top: 18px; padding: 16px 18px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+  }
+  .afx-score-n { font-size: 30px; font-weight: 700; line-height: 1; white-space: nowrap; }
+  .afx-score-lab { font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+  .afx-marklist { margin-top: 22px; }
+  .afx-marklist h3 { margin: 0 0 10px; font-size: 14.5px; }
+  .afx-mark {
+    border: 1px solid var(--line); border-left: 4px solid var(--line);
+    border-radius: 10px; padding: 12px 14px; margin-top: 8px; background: var(--bg);
+  }
+  .afx-mark.right { border-left-color: #15803d; }
+  .afx-mark.wrong { border-left-color: #b91c1c; }
+  .afx-mark-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .afx-mark-q { font-size: 14px; font-weight: 600; flex: 1; min-width: 160px; }
+  .afx-mark-score { font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .afx-mark.right .afx-mark-score { color: #15803d; }
+  .afx-mark.wrong .afx-mark-score { color: #b91c1c; }
+  .afx-mark-line { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  .afx-mark-fb { margin: 8px 0 0; font-size: 13px; line-height: 1.55; }
   @media (max-width: 560px) {
     .afx-page { padding: 14px 12px 48px; }
     .afx-head { padding: 22px 18px; border-radius: 13px; }
@@ -261,18 +338,43 @@ const FILLABLE_CSS = `
   }
 `
 
-/** Vanilla, dependency-free page script: validation, progress, and the two
- *  ways back. Everything it needs is already in the DOM, so no question data
- *  is duplicated into the script beyond the download filename. */
+/** Vanilla, dependency-free page script: paging, branching, validation,
+ *  marking and the two ways back. Everything it needs is already in the DOM —
+ *  no question data is duplicated into the script beyond the download name. */
 function fillableScript(fileName: string): string {
   return `;(function () {
   var FILE = ${jsonForScript(fileName)};
   var qs = [].slice.call(document.querySelectorAll('.afx-q[data-qid]'));
   var form = document.getElementById('afx-form');
+  var pages = [].slice.call(form.querySelectorAll('.afx-pg'));
+  var quiz = form.getAttribute('data-quiz') === '1';
+  var reveal = form.getAttribute('data-score') === '1';
   var done = document.getElementById('afx-done');
   var fill = document.getElementById('afx-fill');
   var count = document.getElementById('afx-count');
+  var back = document.getElementById('afx-back');
+  var go = document.getElementById('afx-submit');
+  // The pages actually walked, in order. Everything else — validation,
+  // collection, marking — works off this rather than off the whole form, so a
+  // section an answer routed past is as good as absent.
+  var stack = [0];
   var code = '';
+
+  function pageQuestions(i) {
+    return pages[i] ? [].slice.call(pages[i].querySelectorAll('.afx-q[data-qid]')) : [];
+  }
+
+  function visited() {
+    var out = [];
+    for (var i = 0; i < stack.length; i++) {
+      var secs = pageQuestions(stack[i]);
+      // A backwards route can put the same page in the stack twice. Its
+      // questions are still one question each: counted again, a three-mark quiz
+      // marks itself out of six and lists every answer on it twice.
+      for (var n = 0; n < secs.length; n++) if (out.indexOf(secs[n]) < 0) out.push(secs[n]);
+    }
+    return out;
+  }
 
   function otherText(pick) {
     var box = pick.parentNode.parentNode.querySelector('[data-other-text]');
@@ -353,6 +455,15 @@ function fillableScript(fileName: string): string {
 
   function progress() {
     if (!fill) return;
+    if (pages.length > 1) {
+      // Counting answers across a branching form would mean counting questions
+      // this respondent will never be shown, so the bar counts pages instead.
+      // Branching can still finish early — the total is the longest route.
+      var at = stack[stack.length - 1];
+      fill.style.width = Math.round(((at + 1) / pages.length) * 100) + '%';
+      count.textContent = 'Page ' + (at + 1) + ' of ' + pages.length;
+      return;
+    }
     var n = 0;
     for (var i = 0; i < tracked.length; i++) if (!isEmpty(collect(tracked[i]))) n++;
     fill.style.width = tracked.length ? Math.round((n / tracked.length) * 100) + '%' : '0%';
@@ -373,6 +484,191 @@ function fillableScript(fileName: string): string {
     var sec = t && t.closest ? t.closest('.afx-q[data-qid]') : null;
     if (sec && sec.classList.contains('afx-bad') && !problem(sec)) setError(sec, null);
     progress();
+    // An answer can change where the form goes next, so the button has to say
+    // so before it is pressed rather than surprising them afterwards.
+    refreshNav();
+  }
+
+  // ---------- paging and branching ----------
+
+  /** The page an answer on page i routes to; -1 finishes the form. */
+  function routeFrom(i) {
+    var secs = pageQuestions(i);
+    // Last branching question first: with two on a page, the answer they gave
+    // most recently is the one still in front of them.
+    for (var n = secs.length - 1; n >= 0; n--) {
+      var kind = secs[n].getAttribute('data-kind');
+      var picked = null;
+      if (kind === 'choice') picked = secs[n].querySelector('input[type="radio"]:checked');
+      else if (kind === 'dropdown') {
+        var sel = secs[n].querySelector('select');
+        picked = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+      }
+      if (!picked) continue;
+      var to = picked.getAttribute('data-goto');
+      if (to === null) continue;
+      if (to === 'end') return -1;
+      // A route into the page it is already on cannot be walked off: Next shows
+      // the same page again and Submit is never reached. Carry on instead, the
+      // same fallback a route to a deleted section takes.
+      if (Number(to) === i) continue;
+      return Number(to);
+    }
+    return i + 1 < pages.length ? i + 1 : -1;
+  }
+
+  function refreshNav() {
+    if (pages.length < 2) return;
+    go.textContent = routeFrom(stack[stack.length - 1]) < 0 ? 'Submit' : 'Next';
+  }
+
+  function showPage() {
+    var at = stack[stack.length - 1];
+    for (var i = 0; i < pages.length; i++) pages[i].hidden = i !== at;
+    if (back) back.hidden = stack.length < 2;
+    refreshNav();
+    progress();
+    window.scrollTo(0, 0);
+  }
+
+  /** Marks every problem on a page and returns the first, or null. */
+  function checkPage(i) {
+    var secs = pageQuestions(i);
+    var first = null;
+    for (var n = 0; n < secs.length; n++) {
+      var msg = problem(secs[n]);
+      setError(secs[n], msg);
+      if (msg && !first) first = secs[n];
+    }
+    return first;
+  }
+
+  function land(sec) {
+    sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    var focusable = sec.querySelector('.afx-field, input');
+    if (focusable) focusable.focus({ preventScroll: true });
+  }
+
+  function advance() {
+    var at = stack[stack.length - 1];
+    var bad = checkPage(at);
+    if (bad) { land(bad); return; }
+    var to = routeFrom(at);
+    if (to < 0) { submit(); return; }
+    stack.push(to);
+    showPage();
+  }
+
+  if (back) back.addEventListener('click', function () {
+    if (stack.length < 2) return;
+    // Everything ahead of here is dropped: changing an answer here can send
+    // them somewhere else entirely, and the old route was never taken.
+    stack.pop();
+    showPage();
+  });
+
+  // ---------- marking ----------
+
+  function norm(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
+  function round2(n) { return Math.round(n * 100) / 100; }
+
+  /** Mirrors gradeAnswer() in model.ts. Null when the question has no key. */
+  function markOf(sec) {
+    var raw = sec.getAttribute('data-key');
+    if (raw === null) return null;
+    var key = [];
+    try { key = JSON.parse(raw); } catch (err) { key = []; }
+    var accepted = [];
+    for (var i = 0; i < key.length; i++) {
+      var k = norm(key[i]);
+      if (k && accepted.indexOf(k) < 0) accepted.push(k);
+    }
+    if (!accepted.length) return null;
+
+    var total = Number(sec.getAttribute('data-marks'));
+    if (!isFinite(total) || total < 0) total = 0;
+    var given = collect(sec);
+
+    if (sec.getAttribute('data-kind') === 'checkboxes') {
+      var ticked = [];
+      for (var t = 0; t < given.length; t++) {
+        var g = norm(given[t]);
+        if (g && ticked.indexOf(g) < 0) ticked.push(g);
+      }
+      var hits = 0;
+      for (var h = 0; h < ticked.length; h++) if (accepted.indexOf(ticked[h]) >= 0) hits++;
+      var wrong = ticked.length - hits;
+      // Partial credit, less one right answer's worth per wrong tick.
+      var share = Math.min(1, Math.max(0, hits - wrong) / accepted.length);
+      return {
+        earned: round2(total * share),
+        total: total,
+        correct: hits === accepted.length && wrong === 0,
+        key: key,
+      };
+    }
+
+    var text = norm(Array.isArray(given) ? given.join(', ') : given);
+    var hit = text !== '' && accepted.indexOf(text) >= 0;
+    if (!hit && text !== '' && sec.getAttribute('data-kind') === 'number' && isFinite(Number(text))) {
+      for (var m = 0; m < accepted.length && !hit; m++) {
+        if (isFinite(Number(accepted[m])) && Number(accepted[m]) === Number(text)) hit = true;
+      }
+    }
+    return { earned: hit ? total : 0, total: total, correct: hit, key: key };
+  }
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function answerText(sec) {
+    var a = collect(sec);
+    var text = Array.isArray(a) ? a.join(', ') : a;
+    return text === '' ? 'You left this blank' : text;
+  }
+
+  /** The question as written, without the asterisk that marks it required —
+   *  that is an instruction for filling it in, not part of the question. */
+  function questionText(sec) {
+    var clone = sec.querySelector('.afx-qtitle').cloneNode(true);
+    var star = clone.querySelector('.afx-req');
+    if (star) star.parentNode.removeChild(star);
+    return clone.textContent.trim();
+  }
+
+  function showMarks(earned, total, marked) {
+    var box = document.getElementById('afx-scorebox');
+    box.appendChild(el('div', 'afx-score-n', earned + ' / ' + total));
+    box.appendChild(
+      el('div', 'afx-score-lab', 'You scored ' + earned + ' out of ' + total + ' — ' +
+        Math.round((earned / total) * 100) + '%. Marked on this device, by this page.'),
+    );
+    box.hidden = false;
+
+    var list = document.getElementById('afx-marks');
+    list.appendChild(el('h3', null, 'Your answers'));
+    for (var i = 0; i < marked.length; i++) {
+      var sec = marked[i].sec;
+      var mark = marked[i].mark;
+      var row = el('div', 'afx-mark ' + (mark.correct ? 'right' : 'wrong'));
+      var head = el('div', 'afx-mark-head');
+      head.appendChild(el('div', 'afx-mark-q', questionText(sec)));
+      head.appendChild(el('div', 'afx-mark-score', mark.earned + ' / ' + mark.total));
+      row.appendChild(head);
+      row.appendChild(el('p', 'afx-mark-line', 'Your answer: ' + answerText(sec)));
+      if (!mark.correct) {
+        var lead = mark.key.length > 1 ? 'Correct answers: ' : 'Correct answer: ';
+        row.appendChild(el('p', 'afx-mark-line', lead + mark.key.join(', ')));
+      }
+      var fb = sec.getAttribute('data-feedback');
+      if (fb) row.appendChild(el('p', 'afx-mark-fb', fb));
+      list.appendChild(row);
+    }
+    list.hidden = false;
   }
 
   function rid() {
@@ -389,31 +685,57 @@ function fillableScript(fileName: string): string {
   }
 
   function submit() {
-    var first = null;
-    for (var i = 0; i < qs.length; i++) {
-      var msg = problem(qs[i]);
-      setError(qs[i], msg);
-      if (msg && !first) first = qs[i];
+    // Every page they walked, not every page in the file: going Back and
+    // clearing a required answer is the only way an earlier page can be wrong,
+    // and they need landing on it rather than told in the abstract.
+    for (var i = 0; i < stack.length; i++) {
+      var bad = checkPage(stack[i]);
+      if (bad) {
+        stack = stack.slice(0, i + 1);
+        showPage();
+        land(bad);
+        return;
+      }
     }
-    if (first) {
-      first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      var focusable = first.querySelector('.afx-field, input');
-      if (focusable) focusable.focus({ preventScroll: true });
-      return;
-    }
+
+    var seen = visited();
     var answers = {};
-    for (var j = 0; j < qs.length; j++) {
-      var a = collect(qs[j]);
-      if (!isEmpty(a)) answers[qs[j].getAttribute('data-qid')] = a;
+    for (var j = 0; j < seen.length; j++) {
+      var a = collect(seen[j]);
+      if (!isEmpty(a)) answers[seen[j].getAttribute('data-qid')] = a;
     }
-    code = encode({ id: rid(), submittedAt: Date.now(), answers: answers });
+    var resp = { id: rid(), submittedAt: Date.now(), answers: answers };
+
+    if (quiz) {
+      var earned = 0;
+      var total = 0;
+      var marked = [];
+      for (var k = 0; k < seen.length; k++) {
+        var mark = markOf(seen[k]);
+        if (!mark) continue;
+        earned += mark.earned;
+        total += mark.total;
+        marked.push({ sec: seen[k], mark: mark });
+      }
+      if (total > 0) {
+        resp.score = { earned: round2(earned), total: round2(total) };
+        // The author always gets the score; whether the respondent sees it is
+        // the author's decision, taken in the quiz settings.
+        if (reveal) showMarks(round2(earned), round2(total), marked);
+      }
+    }
+
+    code = encode(resp);
     document.getElementById('afx-code').value = code;
     form.hidden = true;
     done.hidden = false;
     window.scrollTo(0, 0);
   }
 
-  document.getElementById('afx-submit').addEventListener('click', submit);
+  go.addEventListener('click', function () {
+    if (pages.length > 1) advance();
+    else submit();
+  });
 
   // The file leads with a line for whoever double-clicks it out of curiosity;
   // parseResponsePayload() reads the code lines that follow the marker.
@@ -449,20 +771,42 @@ function fillableScript(fileName: string): string {
     el.hidden = false;
   }
 
-  progress();
+  showPage();
 })();`
 }
 
 /** The standalone .html a respondent fills in — offline, in any browser. */
 export function renderFillableForm(title: string, content: FormsContent): string {
   const name = title || 'Untitled form'
-  const numbers = content.settings?.showQuestionNumbers ? questionNumbers(content.questions) : {}
-  const questions = content.questions.map((q) => questionHtml(q, numbers[q.id])).join('')
+  const quiz = !!content.settings?.quizMode
+  const ctx: Ctx = {
+    quiz,
+    numbers: content.settings?.showQuestionNumbers ? questionNumbers(content.questions) : {},
+    pageOf: new Map<string, number>(),
+  }
+  const pages = formPages(content.questions)
+  pages.forEach((p, i) => ctx.pageOf.set(p.id, i))
+
+  // One <div class="afx-pg"> per page whether or not the form is paginated:
+  // the script decides from their number, and a one-page form behaves exactly
+  // as it did before sections became page breaks.
+  const body_pages = pages
+    .map(
+      (p, i) =>
+        `<div class="afx-pg" data-page="${i}"${i === 0 ? '' : ' hidden'}>${
+          p.section ? questionHtml(p.section, ctx) : ''
+        }${p.questions.map((q) => questionHtml(q, ctx)).join('')}</div>`,
+    )
+    .join('')
 
   const desc = content.description ? `<p>${escapeHtml(content.description)}</p>` : ''
   const progress = content.settings?.showProgress
     ? `<div class="afx-bar"><div class="afx-track"><div class="afx-fill" id="afx-fill"></div></div><p class="afx-count" id="afx-count"></p></div>`
     : ''
+  const backBtn =
+    pages.length > 1
+      ? `<button type="button" class="afx-btn afx-ghost" id="afx-back" hidden>Back</button>`
+      : ''
 
   const body = `<div class="afx-page">
   <header class="afx-head">
@@ -470,15 +814,17 @@ export function renderFillableForm(title: string, content: FormsContent): string
     ${desc}
   </header>
   <p class="afx-privacy">${PRIVACY_LINE}</p>
-  <div id="afx-form">
+  <div id="afx-form" data-quiz="${quiz ? '1' : '0'}" data-score="${quiz && content.settings?.showScore ? '1' : '0'}">
     ${progress}
-    ${questions}
+    ${body_pages}
     <div class="afx-actions">
+      ${backBtn}
       <button type="button" class="afx-btn" id="afx-submit">Submit</button>
     </div>
   </div>
   <section class="afx-done" id="afx-done" hidden>
     <h2>${escapeHtml(content.settings?.confirmation || 'Thanks — your response has been recorded.')}</h2>
+    <div class="afx-scorebox" id="afx-scorebox" hidden></div>
     <p>Nothing was sent anywhere. Return your answers to whoever gave you this form, either way below — both contain the same thing.</p>
     <div class="afx-ways">
       <div class="afx-way">
@@ -497,6 +843,7 @@ export function renderFillableForm(title: string, content: FormsContent): string
         </div>
       </div>
     </div>
+    <div class="afx-marklist" id="afx-marks" hidden></div>
   </section>
 </div>`
 
@@ -568,6 +915,7 @@ const PRINTABLE_CSS = `
   .afp-sec { border-bottom: 1.5px solid #c9ccd4; padding-bottom: 6px; margin-top: 10px; }
   .afp-sec h2 { margin: 0; font-size: 17px; }
   .afp-qtitle { font-size: 14px; font-weight: 600; line-height: 1.45; }
+  .afp-marks { float: right; font-size: 11.5px; font-weight: 600; color: #6b7280; }
   .afp-num { color: #6b7280; }
   .afp-req { color: #dc2626; margin-left: 3px; }
   .afp-help { margin: 4px 0 0; font-size: 12px; line-height: 1.5; color: #6b7280; white-space: pre-wrap; }
@@ -595,6 +943,7 @@ const PRINTABLE_CSS = `
 export function renderPrintableForm(title: string, content: FormsContent): string {
   const name = title || 'Untitled form'
   const numbers = content.settings?.showQuestionNumbers ? questionNumbers(content.questions) : {}
+  const quiz = !!content.settings?.quizMode
 
   const questions = content.questions
     .map((q) => {
@@ -604,8 +953,11 @@ export function renderPrintableForm(title: string, content: FormsContent): strin
       const n: number | undefined = numbers[q.id]
       const num = n === undefined ? '' : `<span class="afp-num">${n}.</span> `
       const req = q.required ? '<span class="afp-req">*</span>' : ''
+      // On paper the marks belong beside the question: whoever marks it by hand
+      // needs them, and there is no key on the sheet to give the answer away.
+      const marks = quiz && hasAnswerKey(q) ? `<span class="afp-marks">${marksLabel(questionMarks(q))}</span>` : ''
       return `<section class="afp-q">
-    <div class="afp-qtitle">${num}${escapeHtml(q.title)}${req}</div>
+    <div class="afp-qtitle">${num}${escapeHtml(q.title)}${req}${marks}</div>
     ${help}
     ${printControl(q)}
   </section>`

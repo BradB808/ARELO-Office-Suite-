@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anleo Office — Documents, spreadsheets, presentations and forms in one Mac app</title>
+<meta name="description" content="A free, open-source, completely offline office suite for macOS. Docs, Sheets and Slides in one app. No account, no cloud, no telemetry — and no network requests at all.">
+<meta name="theme-color" content="#FCF5E2">
+<link rel="icon" href="assets/img/suite-512.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/img/suite-512.png">
+<link rel="canonical" href="https://anleo-office.netlify.app/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Anleo Office">
+<meta property="og:url" content="https://anleo-office.netlify.app/">
+<meta property="og:title" content="Anleo Office — one Mac app for documents, spreadsheets, presentations and forms">
+<meta property="og:description" content="Free, open source, and completely offline. It makes no network requests at all.">
+<meta property="og:image" content="https://anleo-office.netlify.app/assets/img/hub.png">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="1016">
+<meta property="og:image:alt" content="The Anleo Office home screen, with New document, New spreadsheet and New presentation above a grid of templates.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Anleo Office — one Mac app for documents, spreadsheets, presentations and forms">
+<meta name="twitter:description" content="Free, open source, and completely offline. It makes no network requests at all.">
+<meta name="twitter:image" content="https://anleo-office.netlify.app/assets/img/hub.png">
+
+<link rel="preload" href="assets/fonts/source-serif-4.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/radio-canada.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- ─────────────────────────── nav ─────────────────────────── -->
+<header class="nav" id="nav">
+  <nav class="nav__bar" aria-label="Primary">
+    <a class="nav__brand" href="#top">
+      <img src="assets/img/suite-512.png" alt="" width="28" height="28">
+      <span>Anleo</span>
+    </a>
+    <ul class="nav__links">
+      <li><a href="#apps">The apps</a></li>
+      <li><a href="#different">Why it's different</a></li>
+      <li><a href="#privacy">Privacy</a></li>
+      <li><a href="#price">Price</a></li>
+    </ul>
+    <a class="btn btn--sm" href="#install">Download for Mac</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<!-- ─────────────────────────── hero ─────────────────────────── -->
+<section class="hero" id="top">
+  <div class="hero__inner">
+
+    <div class="mac" id="mac">
+      <div class="mac__body">
+        <div class="mac__bezel">
+          <div class="mac__screen">
+            <div class="crt">
+              <p class="crt__type" id="typed" aria-hidden="true"></p>
+              <h1 class="visually-hidden">Documents, spreadsheets, presentations and forms in one Mac app.</h1>
+              <img class="crt__shot" id="crtShot" src="assets/img/hub.png"
+                   alt="The Anleo Office home screen, showing New document, New spreadsheet and New presentation alongside a grid of templates."
+                   width="2960" height="1880" fetchpriority="high">
+              <div class="crt__glass" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+        <div class="mac__chin">
+          <span class="mac__label">Anleo Office</span>
+          <span class="mac__drive" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="mac__base" aria-hidden="true"></div>
+    </div>
+
+    <div class="hero__copy">
+      <p class="hero__sub">
+        Free, open source, and completely offline.<br>
+        <strong>It makes no network requests at all.</strong>
+      </p>
+      <a class="btn btn--lg" href="https://github.com/BradB808/ARELO-Office-Suite-/releases/latest/download/Anleo-Office-macOS-universal.dmg">
+        <span class="btn__arrow" aria-hidden="true">↓</span> Download for Mac
+      </a>
+      <p class="hero__meta">
+        Version 1.1.0 · 207 MB · one file for Intel <em>and</em> Apple Silicon
+      </p>
+      <p class="hero__note">
+        macOS blocks unsigned apps on first launch — <a href="#install">30-second fix</a>
+      </p>
+    </div>
+
+    <div class="scrollcue" aria-hidden="true">
+      <span>Scroll down</span>
+      <svg viewBox="0 0 12 34" width="12" height="34" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M6 0v30M1 25l5 6 5-6"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── marquee ─────────────────────────── -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee__track">
+    <span>No account<i>✳</i>No cloud<i>✳</i>No telemetry<i>✳</i>No subscription<i>✳</i>No sign-up<i>✳</i>No servers<i>✳</i></span>
+    <span>No account<i>✳</i>No cloud<i>✳</i>No telemetry<i>✳</i>No subscription<i>✳</i>No sign-up<i>✳</i>No servers<i>✳</i></span>
+  </div>
+</div>
+
+<!-- ─────────────────────────── the problem ─────────────────────────── -->
+<section class="problem" id="problem">
+  <div class="wrap">
+    <p class="eyebrow eyebrow--light" data-reveal>The problem</p>
+    <h2 class="display display--xl" data-reveal>
+      Writing a document is easy.<br>
+      Knowing who else read it is hard.
+    </h2>
+
+    <p class="problem__lead" data-reveal>Most office software is chatty. In the background, it is busy —</p>
+
+    <ul class="chatty">
+      <li data-reveal><span>checking for updates</span></li>
+      <li data-reveal><span>reporting crashes</span></li>
+      <li data-reveal><span>syncing your settings</span></li>
+      <li data-reveal><span>loading whatever a document asks it to</span></li>
+    </ul>
+
+    <p class="problem__lead problem__lead--tight" data-reveal>
+      If you handle material that other people would like to read, that is a problem.
+    </p>
+
+    <p class="display display--lg problem__punch" data-reveal>
+      Anleo makes no network requests.<br>
+      <em>Not fewer — none.</em>
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────────── the four apps ─────────────────────────── -->
+<section class="apps" id="apps">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="eyebrow">One application, not four downloads</p>
+      <h2 class="display display--xl">Four apps.<br>One window.</h2>
+      <p class="sec-head__sub">
+        There is no account, no subscription, no cloud and nothing to sign up for.
+        Your documents are files on your Mac and they stay there.
+      </p>
+    </header>
+
+    <!-- Docs -->
+    <article class="app app--docs" data-reveal>
+      <div class="app__text">
+        <p class="eyebrow app__eyebrow"><span class="dot"></span>App 01 — Word processor</p>
+        <h3 class="display display--lg">Anleo Docs</h3>
+        <p>
+          The formatting you actually use: styles, tables, lists, find and replace,
+          page breaks, a table of contents, special characters, and system spellcheck
+          with right-click suggestions.
+        </p>
+        <ul class="beats">
+          <li>
+            <strong>Images you can genuinely move.</strong> Drag a picture anywhere and text
+            flows around it — left wrap, right wrap or inline — without the layout collapsing.
+            It exports as a real Word square-wrap anchor, so it survives the round trip.
+          </li>
+          <li>
+            <strong>Install your own fonts</strong> by dropping a <code>.ttf</code> or
+            <code>.otf</code> into the app. No system installation, no admin password.
+          </li>
+        </ul>
+        <p class="formats">
+          <span class="formats__label">Exports</span>
+          <span class="chip">docx</span><span class="chip">pdf</span><span class="chip">odt</span><span class="chip">rtf</span><span class="chip">epub</span><span class="chip">html</span><span class="chip">md</span><span class="chip">txt</span>
+        </p>
+      </div>
+      <figure class="app__shot">
+        <img src="assets/img/docs.png" alt="Anleo Docs editing a résumé, with a formatting toolbar and a page view." width="2960" height="1880" loading="lazy" decoding="async">
+      </figure>
+    </article>
+
+    <!-- Sheets -->
+    <article class="app app--sheets app--flip" data-reveal>
+      <div class="app__text">
+        <p class="eyebrow app__eyebrow"><span class="dot"></span>App 02 — Spreadsheet</p>
+        <h3 class="display display--lg">Anleo Sheets</h3>
+        <p>
+          A real formula engine — around <strong>135 Excel-compatible functions</strong>,
+          written from scratch. Tokenizer, parser, evaluator. Not a wrapper around anything.
+        </p>
+        <ul class="beats">
+          <li>
+            <strong>Lookup and logic.</strong> <code>XLOOKUP</code>, <code>INDEX</code>/<code>MATCH</code>,
+            <code>SUMIFS</code>, <code>COUNTIFS</code>, <code>MAXIFS</code>, <code>SUMPRODUCT</code>.
+          </li>
+          <li>
+            <strong>Finance, stats and dates.</strong> <code>PMT</code>, <code>NPV</code>, <code>IRR</code>,
+            <code>RATE</code>, <code>PERCENTILE</code>, <code>CORREL</code>, <code>FORECAST</code>,
+            <code>NETWORKDAYS</code>, <code>DATEDIF</code>.
+          </li>
+        </ul>
+        <p class="formats">
+          <span class="formats__label">Also</span>
+          <span class="chip">merged cells</span><span class="chip">freeze panes</span><span class="chip">conditional formatting</span><span class="chip">data validation</span><span class="chip">filters</span><span class="chip">charts</span><span class="chip">xlsx + csv</span>
+        </p>
+      </div>
+      <figure class="app__shot">
+        <img src="assets/img/sheets.png" alt="Anleo Sheets with a formula bar, a grid of cells and a chart." width="2960" height="1880" loading="lazy" decoding="async">
+      </figure>
+    </article>
+
+    <!-- Slides -->
+    <article class="app app--slides" data-reveal>
+      <div class="app__text">
+        <p class="eyebrow app__eyebrow"><span class="dot"></span>App 03 — Presentations</p>
+        <h3 class="display display--lg">Anleo Slides</h3>
+        <p>
+          Themes, layouts, <strong>15 shape types</strong> with gradient fills and arrowheads,
+          align and distribute, transitions and slide numbers.
+        </p>
+        <ul class="beats">
+          <li>
+            <strong>A presenter view that earns its name.</strong> Speaker notes and a timer
+            on your screen while the deck plays on theirs.
+          </li>
+          <li>
+            <strong>Exports to pptx and PDF</strong> — or as a single web page that plays
+            as a slideshow in any browser.
+          </li>
+        </ul>
+        <p class="formats">
+          <span class="formats__label">Exports</span>
+          <span class="chip">pptx</span><span class="chip">pdf</span><span class="chip">html</span>
+        </p>
+      </div>
+      <figure class="app__shot">
+        <img src="assets/img/slides.png" alt="Anleo Slides showing a slide canvas, a slide sorter and shape tools." width="2960" height="1880" loading="lazy" decoding="async">
+      </figure>
+    </article>
+
+    <!-- Forms -->
+    <article class="app app--forms app--flip" data-reveal>
+      <div class="app__text">
+        <p class="eyebrow app__eyebrow"><span class="dot"></span>App 04 — Forms &amp; surveys</p>
+        <h3 class="display display--lg">Anleo Forms</h3>
+        <p>
+          Eleven question types, sections, help text, required fields, themes, quiz
+          marking and conditional branching — with a live preview of exactly what the
+          person filling it in will see.
+        </p>
+        <ul class="beats">
+          <li>
+            <strong>No link to publish. No account for anyone.</strong> Google Forms needs a
+            server, so every answer lands in someone else's database. Anleo exports
+            <em>one self-contained HTML file</em>. Send it however you like; they open it in
+            any browser, offline, and fill it in.
+          </li>
+          <li>
+            <strong>Answers come back as a file or a pasted code.</strong> You import them and
+            they aggregate, with per-question summaries and charts. Nobody in the middle ever
+            sees them — the exported page carries a policy forbidding it from contacting
+            anything, so a respondent can check that before typing a word.
+          </li>
+          <li>
+            <strong>Quizzes mark themselves</strong>, in the respondent's own browser, with no
+            network. Responses export to CSV or go straight into a spreadsheet in Anleo Sheets.
+          </li>
+        </ul>
+        <p class="formats">
+          <span class="formats__label">Exports</span>
+          <span class="chip">html</span><span class="chip">pdf</span><span class="chip">csv</span>
+        </p>
+      </div>
+      <figure class="app__shot">
+        <img src="assets/img/forms.png" alt="Anleo Forms building an event RSVP, with question cards and a themed header." width="2960" height="1880" loading="lazy" decoding="async">
+      </figure>
+    </article>
+
+    <div class="templates card" data-reveal>
+      <div>
+        <p class="eyebrow">Included</p>
+        <h3 class="display display--md">90 templates</h3>
+        <p>
+          Résumés, invoices, budgets, pitch decks, lesson plans, habit trackers and
+          newsletters — searchable and filterable, across all four apps.
+        </p>
+      </div>
+      <ul class="templates__chips" aria-label="Template categories">
+        <li>Résumé</li><li>Invoice</li><li>Budget</li><li>Pitch deck</li>
+        <li>Cover letter</li><li>Lesson plan</li><li>Habit tracker</li>
+        <li>Newsletter</li><li>Business review</li><li>Marketing plan</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── what's different ─────────────────────────── -->
+<section class="different" id="different">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="eyebrow">Not a cheaper Office</p>
+      <h2 class="display display--xl">Things Word and<br>Google Docs don't do.</h2>
+    </header>
+
+    <div class="grid">
+      <article class="card feat" data-reveal>
+        <span class="feat__num">01</span>
+        <h3>Live links between the four apps</h3>
+        <p>
+          Copy a range in Sheets, paste it into a document or a slide, and it stays connected.
+          Change the spreadsheet, hit refresh, and the table and its totals update wherever you
+          pasted them. No cloud involved — it is all local.
+        </p>
+      </article>
+
+      <article class="card feat" data-reveal>
+        <span class="feat__num">02</span>
+        <h3>Share as a web page</h3>
+        <p>
+          Turn any document into a single <code>.html</code> file that anyone can open by
+          double-clicking, on Mac, Windows or a phone. Spreadsheets stay live and recalculate
+          for the reader, decks play as a slideshow, checklists stay tickable.
+        </p>
+      </article>
+
+      <article class="card feat" data-reveal>
+        <span class="feat__num">03</span>
+        <h3>A command palette</h3>
+        <p>
+          <kbd>⌘</kbd><kbd>K</kbd> searches and runs every command in the app.
+          <kbd>⌘</kbd><kbd>/</kbd> lists them all with their shortcuts. No hunting through ribbons.
+        </p>
+      </article>
+
+      <article class="card feat" data-reveal>
+        <span class="feat__num">04</span>
+        <h3>Fonts without an admin password</h3>
+        <p>
+          Drop a <code>.ttf</code> or <code>.otf</code> into the app and use it. Nothing is
+          installed system-wide, nothing asks you to authenticate, nothing leaks to a foundry.
+        </p>
+      </article>
+
+      <article class="card feat" data-reveal>
+        <span class="feat__num">05</span>
+        <h3>AI that is off by default</h3>
+        <p>
+          Rewrite, summarise, change tone, generate a formula from a description, or draft a
+          deck outline. There is no bundled key. Add your own OpenRouter key and exactly one
+          host opens in the gate; remove it and the app goes back to reaching nothing.
+        </p>
+      </article>
+
+      <article class="card feat" data-reveal>
+        <span class="feat__num">06</span>
+        <h3>It costs nothing because it costs nothing to run</h3>
+        <p>
+          There is no server anywhere. No seat to meter, no storage to bill, no account to
+          maintain. That is the whole business model, and it is why the price can be zero
+          without an asterisk.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── privacy ─────────────────────────── -->
+<section class="privacy" id="privacy">
+  <div class="wrap">
+    <header class="sec-head sec-head--light" data-reveal>
+      <p class="eyebrow eyebrow--light">Why it's private</p>
+      <h2 class="display display--xl">Enforced, rather<br>than intended.</h2>
+      <p class="sec-head__sub">
+        "We don't collect your data" is a promise. This is a filter that cancels the request.
+      </p>
+    </header>
+
+    <div class="privacy__grid">
+      <article class="card layer" data-reveal>
+        <p class="eyebrow">Layer one</p>
+        <h3 class="display display--md">A deny-by-default network gate</h3>
+        <p>
+          Every request that is not a local file is cancelled in the main process — which sits
+          <em>below</em> the renderer. It holds even if the user interface is compromised.
+        </p>
+      </article>
+
+      <article class="card layer" data-reveal>
+        <p class="eyebrow">Layer two</p>
+        <h3 class="display display--md">A strict Content-Security-Policy</h3>
+        <p>
+          A second, independent barrier. Two locks that fail in different ways are worth more
+          than one lock that fails in one.
+        </p>
+      </article>
+
+      <article class="card layer layer--wide" data-reveal>
+        <p class="eyebrow">The tracking-pixel problem</p>
+        <h3 class="display display--md">A document you open cannot tell anyone you opened it</h3>
+        <p>
+          The oldest trick against a reporter is a one-pixel image hosted on the sender's
+          server: open the file and they learn your IP address and the moment you read it.
+          Word does this by default. Anleo strips remote images, scripts, iframes, remote
+          stylesheets and <code>javascript:</code> links out of every file it imports —
+          <strong>and tells you what it removed.</strong>
+        </p>
+      </article>
+    </div>
+
+    <div class="verify" data-reveal>
+      <div class="verify__copy">
+        <p class="eyebrow eyebrow--light">Don't take our word for it</p>
+        <h3 class="display display--lg">Check it yourself.</h3>
+        <p>
+          34 assertions inside a real Electron process — genuine connection attempts to outside
+          hosts, asserted to fail. <code>npm run dist</code> refuses to build if any of them pass.
+          A build that produced a DMG is a build that passed them.
+        </p>
+      </div>
+      <div class="term" data-copy="npm run verify:security">
+        <div class="term__bar"><i></i><i></i><i></i><span>zsh — anleo</span></div>
+        <pre class="term__body"><code><span class="term__p">$</span> npm run verify:security
+
+<span class="ok">✓</span> outbound https to example.com   blocked
+<span class="ok">✓</span> outbound http  to example.com   blocked
+<span class="ok">✓</span> remote image in imported docx   stripped
+<span class="ok">✓</span> remote stylesheet               stripped
+<span class="ok">✓</span> iframe / script / javascript:   stripped
+<span class="dim">  … 29 more</span>
+
+<span class="ok">34 passing</span>  <span class="dim">(0 failing)</span></code></pre>
+        <button class="term__copy" type="button">Copy command</button>
+      </div>
+    </div>
+
+    <aside class="honest card" data-reveal>
+      <p class="eyebrow">Read this before you rely on it</p>
+      <p>
+        <strong>PRIVACY.md is explicit about the limits.</strong> Your documents are
+        <em>not</em> encrypted on disk. This does not protect a compromised Mac. It does not
+        make you anonymous. And there is no auto-update — which means security fixes will not
+        reach you on their own.
+      </p>
+      <a class="link" href="https://github.com/BradB808/ARELO-Office-Suite-/blob/main/PRIVACY.md">Read PRIVACY.md →</a>
+    </aside>
+
+    <ul class="tests" data-reveal>
+      <li><b>260</b><span>formula engine assertions</span></li>
+      <li><b>94</b><span>document conversion</span></li>
+      <li><b>63</b><span>shared contracts</span></li>
+      <li><b>55</b><span>import sanitizer</span></li>
+      <li><b>34</b><span>security layer</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────── price ─────────────────────────── -->
+<section class="price" id="price">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="eyebrow">Pricing</p>
+      <h2 class="display display--xl">One plan.<br>It is free.</h2>
+      <p class="sec-head__sub">
+        Not free-for-now, not free-for-two-seats, not free-until-we-raise. There is no server
+        to pay for, so there is nothing to charge you for.
+      </p>
+    </header>
+
+    <div class="price__grid">
+      <div class="card included" data-reveal>
+        <h3 class="display display--md">What's included</h3>
+        <ul class="ticks">
+          <li>All four apps — Docs, Sheets and Slides</li>
+          <li>Around 135 Excel-compatible functions</li>
+          <li>90 templates across all four apps</li>
+          <li>Live links between spreadsheets, docs and decks</li>
+          <li>Export to docx, xlsx, pptx, pdf, odt, rtf, epub, html, md, txt, csv</li>
+          <li>Self-contained web-page export</li>
+          <li>Custom font install, no admin password</li>
+          <li>⌘K command palette</li>
+          <li>Presenter view with notes and a timer</li>
+          <li>Optional AI with your own OpenRouter key</li>
+          <li>Universal binary — Intel and Apple Silicon</li>
+          <li>Full source, MIT licensed</li>
+        </ul>
+      </div>
+
+      <div class="price__cards">
+        <div class="card plan plan--free" data-reveal>
+          <h3 class="display display--md">Anleo Office</h3>
+          <p class="plan__price"><span>$</span>0<em>/forever</em></p>
+          <hr class="dashed">
+          <p class="plan__for">For anyone with a Mac. Every feature, no tiers.</p>
+          <hr class="dashed">
+          <a class="btn btn--block" href="https://github.com/BradB808/ARELO-Office-Suite-/releases/latest/download/Anleo-Office-macOS-universal.dmg">Download for Mac</a>
+        </div>
+
+        <div class="card plan plan--source" data-reveal>
+          <h3 class="display display--md">Build it yourself</h3>
+          <p class="plan__price"><span></span>5<em>minutes</em></p>
+          <hr class="dashed">
+          <p class="plan__for">Rather not trust a downloaded binary? Reasonable, for this app.</p>
+          <hr class="dashed">
+          <a class="btn btn--block btn--ghost" href="#source">See the three commands</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── install ─────────────────────────── -->
+<section class="install" id="install">
+  <div class="wrap">
+    <header class="sec-head sec-head--light" data-reveal>
+      <p class="eyebrow eyebrow--light">Install</p>
+      <h2 class="display display--xl">macOS will block it<br>on first launch.</h2>
+      <p class="sec-head__sub">
+        Builds are deliberately <strong>unsigned</strong>. Signing would stamp a real person's
+        legal name and Apple Team ID into every binary, which is the wrong trade for this
+        particular app. The cost is one extra step, once.
+      </p>
+    </header>
+
+    <div class="warnbox card" data-reveal>
+      <p class="warnbox__quote">"Apple could not verify 'Anleo Office' is free of malware."</p>
+      <p>
+        That message means the app has not been through Apple's paid notarization service.
+        It is <strong>not</strong> a claim that anything was found.
+      </p>
+    </div>
+
+    <div class="steps" data-reveal>
+      <p class="steps__title">On macOS 15 Sequoia and later — right-click → Open no longer works, Apple removed it:</p>
+      <ol>
+        <li>Drag <strong>Anleo Office</strong> to Applications and double-click it once. Click <strong>Done</strong> on the warning.</li>
+        <li>Open the <strong>Apple menu</strong> → <strong>System Settings</strong> → <strong>Privacy &amp; Security</strong>.</li>
+        <li>Scroll to <strong>Security</strong>. You'll see <em>"Anleo Office was blocked to protect your Mac."</em> Click <strong>Open Anyway</strong> and authenticate.</li>
+        <li>Double-click the app again and click <strong>Open</strong>. You only do this once.</li>
+      </ol>
+      <p class="steps__alt">On <strong>macOS 14 Sonoma and earlier</strong>: right-click the app → <strong>Open</strong> → <strong>Open</strong>.</p>
+    </div>
+
+    <div class="cmds">
+      <div class="term" data-copy='xattr -dr com.apple.quarantine "/Applications/Anleo Office.app"' data-reveal>
+        <div class="term__bar"><i></i><i></i><i></i><span>Either version, one command</span></div>
+        <pre class="term__body"><code><span class="term__p">$</span> xattr -dr com.apple.quarantine <span class="str">"/Applications/Anleo Office.app"</span></code></pre>
+        <button class="term__copy" type="button">Copy</button>
+      </div>
+
+      <div class="term" id="source" data-copy="git clone https://github.com/BradB808/ARELO-Office-Suite-.git
+cd ARELO-Office-Suite-
+npm install
+npm run dist" data-reveal>
+        <div class="term__bar"><i></i><i></i><i></i><span>Or build from source — needs Node 20+</span></div>
+        <pre class="term__body"><code><span class="term__p">$</span> git clone https://github.com/BradB808/ARELO-Office-Suite-.git
+<span class="term__p">$</span> cd ARELO-Office-Suite-
+<span class="term__p">$</span> npm install
+<span class="term__p">$</span> npm run dist
+
+<span class="dim"># the universal .dmg lands in release/</span></code></pre>
+        <button class="term__copy" type="button">Copy</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── final cta ─────────────────────────── -->
+<section class="final">
+  <div class="wrap">
+    <p class="eyebrow" data-reveal>Ready?</p>
+    <h2 class="display display--xl" data-reveal>
+      Your documents are files<br>on your Mac.<br>
+      <em>They stay there.</em>
+    </h2>
+    <div data-reveal>
+      <a class="btn btn--lg" href="https://github.com/BradB808/ARELO-Office-Suite-/releases/latest/download/Anleo-Office-macOS-universal.dmg">
+        <span class="btn__arrow" aria-hidden="true">↓</span> Download Anleo Office
+      </a>
+      <p class="hero__meta">Version 1.1.0 · 207 MB · Intel + Apple Silicon · MIT licensed</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ─────────────────────────── footer ─────────────────────────── -->
+<footer class="foot">
+  <div class="wrap foot__inner">
+    <div class="foot__brand">
+      <img src="assets/img/suite-512.png" alt="" width="40" height="40">
+      <p class="foot__word">Anleo Office</p>
+      <p class="foot__tag">Documents, spreadsheets, presentations and forms in one Mac app.</p>
+    </div>
+
+    <nav class="foot__col" aria-label="Product">
+      <h2>Product</h2>
+      <ul>
+        <li><a href="#apps">The four apps</a></li>
+        <li><a href="#different">Why it's different</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+        <li><a href="#install">Install</a></li>
+      </ul>
+    </nav>
+
+    <nav class="foot__col" aria-label="Source">
+      <h2>Source</h2>
+      <ul>
+        <li><a href="https://github.com/BradB808/ARELO-Office-Suite-">GitHub repository</a></li>
+        <li><a href="https://github.com/BradB808/ARELO-Office-Suite-/releases">All releases</a></li>
+        <li><a href="https://github.com/BradB808/ARELO-Office-Suite-/blob/main/FEATURES.md">Parity audit</a></li>
+        <li><a href="https://github.com/BradB808/ARELO-Office-Suite-/issues">Issues</a></li>
+      </ul>
+    </nav>
+
+    <nav class="foot__col" aria-label="Legal">
+      <h2>Legal</h2>
+      <ul>
+        <li><a href="https://github.com/BradB808/ARELO-Office-Suite-/blob/main/PRIVACY.md">Privacy</a></li>
+        <li><a href="https://github.com/BradB808/ARELO-Office-Suite-/blob/main/SECURITY.md">Security</a></li>
+        <li><a href="https://github.com/BradB808/ARELO-Office-Suite-/blob/main/LICENSE">MIT licence</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="wrap foot__base">
+    <p>© 2026 Anleo Office. MIT licensed.</p>
+    <p class="foot__self">Built with Electron 43 · React 19 · TypeScript · Vite 8. This site self-hosts its fonts and loads nothing from a third party.</p>
+  </div>
+</footer>
+
+<script src="assets/site.js" defer></script>
+</body>
+</html>

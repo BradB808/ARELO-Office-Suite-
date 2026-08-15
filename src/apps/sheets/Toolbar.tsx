@@ -93,6 +93,8 @@ export default function Toolbar({
   filterActive,
   onToggleFilter,
   onOpenValidation,
+  onOpenPivot,
+  onRefreshPivots,
   paintMode,
   onPaintOnce,
   onPaintSticky,
@@ -140,6 +142,8 @@ export default function Toolbar({
   filterActive: boolean
   onToggleFilter: () => void
   onOpenValidation: () => void
+  onOpenPivot: () => void
+  onRefreshPivots: () => void
   paintMode: PaintMode
   onPaintOnce: () => void
   onPaintSticky: () => void
@@ -353,7 +357,16 @@ export default function Toolbar({
       <IconBtn label={filterActive ? 'Remove filter' : 'Create filter'} active={filterActive} onClick={onToggleFilter}>
         <IcFunnel />
       </IconBtn>
-      <MenuButton label="Data" trigger={<IcDropdownList />} items={[{ label: 'Dropdown list…', onClick: onOpenValidation }]} />
+      <MenuButton
+        label="Data"
+        trigger={<IcDropdownList />}
+        items={[
+          { label: 'Pivot table…', onClick: onOpenPivot },
+          { label: 'Refresh pivot tables', onClick: onRefreshPivots },
+          'sep',
+          { label: 'Dropdown list…', onClick: onOpenValidation },
+        ]}
+      />
 
       <Spacer />
 
