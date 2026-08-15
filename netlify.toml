@@ -1,0 +1,28 @@
+# The marketing site at anleo-office.netlify.app.
+#
+# It is a static folder — no build step, no framework, no dependencies. The
+# whole thing is hand-written HTML, one stylesheet, one small script and the
+# app screenshots, so "building" it means copying website/ as-is.
+
+[build]
+  publish = "website"
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"
+
+# Fonts and screenshots are content-addressed by filename and change only when
+# the app does, so they can be cached hard.
+[[headers]]
+  for = "/assets/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
